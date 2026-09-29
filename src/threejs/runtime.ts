@@ -3,7 +3,8 @@
 // page's thread otherwise. Each frame it runs the fixed simulation steps that are due, writes the
 // moving objects, draws, and records the frame's CPU time.
 
-import type * as ThreeModule from 'three';
+// The classic module loads with the worker anyway: the battle's model loader imports it.
+import * as THREE from 'three';
 import type { FromEngine, GpuPath, Measurement, StartOptions } from '../engine/protocol';
 import { FrameSamples } from '../engine/samples';
 import { FixedClock } from '../scenes/common';
@@ -35,7 +36,7 @@ const SCENE_MODULES: Partial<Record<SceneId, SceneModule>> = {
 /** How often the live readout gets new figures. */
 const STATS_MS = 500;
 
-type AnyRenderer = ThreeModule.WebGLRenderer & {
+type AnyRenderer = THREE.WebGLRenderer & {
 	init?: () => Promise<unknown>;
 	backend?: { isWebGPUBackend?: boolean };
 	info: { render: { calls?: number; drawCalls?: number } };
@@ -160,13 +161,12 @@ export class ThreeRuntime {
 				kind: 'webgpu-webgl2',
 			};
 		}
-		const three = await import('three');
-		const renderer = new three.WebGLRenderer({
+		const renderer = new THREE.WebGLRenderer({
 			canvas: canvas as HTMLCanvasElement,
 			antialias: true,
 			powerPreference: 'high-performance',
 		}) as AnyRenderer;
-		return { three, renderer, gpu: 'webgl2', kind: 'webgl' };
+		return { three: THREE, renderer, gpu: 'webgl2', kind: 'webgl' };
 	}
 
 	private readonly frame = (time: number): void => {
