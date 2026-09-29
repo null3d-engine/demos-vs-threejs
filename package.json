@@ -1,0 +1,34 @@
+{
+	"name": "demos-vs-threejs",
+	"private": true,
+	"description": "Three demo scenes drawn by null3d and by a tuned three.js, side by side, with the same look and a live speed comparison.",
+	"license": "MIT OR Apache-2.0",
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/null3d-engine/demos-vs-threejs.git"
+	},
+	"type": "module",
+	"packageManager": "bun@1.3.14",
+	"scripts": {
+		"dev": "vite",
+		"build": "vite build",
+		"preview": "vite preview",
+		"test": "bun test src tools",
+		"check": "biome check .",
+		"check:fix": "biome check --write .",
+		"typecheck": "tsc -p tsconfig.json && tsc -p tsconfig.node.json"
+	},
+	"dependencies": {
+		"three": "0.186.1"
+	},
+	"devDependencies": {
+		"@biomejs/biome": "2.5.14",
+		"@commitlint/cli": "^21.2.3",
+		"@commitlint/config-conventional": "^21.2.3",
+		"@types/bun": "^1.3.0",
+		"@types/three": "0.186.0",
+		"@webgpu/types": "0.1.74",
+		"typescript": "~6.0.3",
+		"vite": "8.3.1"
+	}
+}
