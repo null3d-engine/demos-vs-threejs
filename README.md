@@ -57,6 +57,7 @@ Add these to the page address, for example `/?scene=city&gpu=webgl2&count=500`.
 | `bun run check` | Lint and format check (Biome) |
 | `bun run check:fix` | Lint and format, fixing what Biome can |
 | `bun run typecheck` | TypeScript check |
+| `bun run assets` | Make the battle's models in `assets/models/` from the source files listed in `assets/source.json` |
 
 ## License
 

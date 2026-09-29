@@ -1,0 +1,44 @@
+{
+	"soldier": {
+		"file": "assets/models/soldier.glb",
+		"triangles": 2500,
+		"vertices": 3344,
+		"joints": 20,
+		"aimJoint": 5,
+		"restHeight": 2.2999299466609955,
+		"scale": 0.7826325330531104,
+		"clips": {
+			"idle": 1.6666666269302368,
+			"run": 0.7333333492279053,
+			"shoot": 0.36666667461395264,
+			"die": 0.7666666507720947
+		},
+		"source": {
+			"pack": "Quaternius, Toon Shooter Game Kit",
+			"url": "https://quaternius.com/packs/toonshootergamekit.html",
+			"file": "Characters/glTF/Character_Soldier.gltf",
+			"license": "CC0 1.0"
+		}
+	},
+	"mech": {
+		"file": "assets/models/mech.glb",
+		"triangles": 3000,
+		"vertices": 4093,
+		"joints": 21,
+		"aimJoint": 1,
+		"restHeight": 6.527639934793115,
+		"scale": 0.5515010074026238,
+		"clips": {
+			"idle": 3.3333332538604736,
+			"run": 0.8333333134651184,
+			"shoot": 0.5,
+			"die": 1.4333332777023315
+		},
+		"source": {
+			"pack": "Quaternius, Animated Mech Pack (flat colors)",
+			"url": "https://quaternius.com/packs/animatedmech.html",
+			"file": "Flat Colors/glTF/George.gltf",
+			"license": "CC0 1.0"
+		}
+	}
+}

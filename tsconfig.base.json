@@ -9,6 +9,7 @@
 		"skipLibCheck": true,
 		"isolatedModules": true,
 		"verbatimModuleSyntax": true,
-		"allowImportingTsExtensions": true
+		"allowImportingTsExtensions": true,
+		"resolveJsonModule": true
 	}
 }
