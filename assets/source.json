@@ -1,0 +1,39 @@
+{
+	"about": "Source files of the battle's animated models. `bun run assets` downloads each file, checks its SHA-256, and writes the web model and assets/models/manifest.json. All packs are CC0 1.0 (quaternius.com/faq.html).",
+	"models": [
+		{
+			"name": "soldier",
+			"pack": "Quaternius, Toon Shooter Game Kit",
+			"packUrl": "https://quaternius.com/packs/toonshootergamekit.html",
+			"file": "Characters/glTF/Character_Soldier.gltf",
+			"local": "Character_Soldier.gltf",
+			"driveId": "18UU-iuYMQyrQ3OAMFoRA8DkZ2Uo_2cai",
+			"sha256": "d1395255f7cfa8f766369e37e724fa44e2895a46a719d17f720c9c78b014a901",
+			"license": "CC0 1.0",
+			"skinnedNode": "Body",
+			"attachments": ["Head", "ShoulderPad.L", "ShoulderPad.R", "AK"],
+			"dropJoints": ["^Pinky", "^Middle", "^Index[23]", "^Index1\\.L$", "^Thumb", "^PoleTarget"],
+			"clips": { "idle": "Idle", "run": "Run_Gun", "shoot": "Idle_Shoot", "die": "Death" },
+			"aimJoint": "Torso",
+			"height": 1.8,
+			"triangles": 2500
+		},
+		{
+			"name": "mech",
+			"pack": "Quaternius, Animated Mech Pack (flat colors)",
+			"packUrl": "https://quaternius.com/packs/animatedmech.html",
+			"file": "Flat Colors/glTF/George.gltf",
+			"local": "Mech_George.gltf",
+			"driveId": "1CEATvzzC1w198kD9DLTamgMD8LsRwV1I",
+			"sha256": "6d4696d1d79fccbc7b011023439599cd147ec66bd4a870aef87497a073807e25",
+			"license": "CC0 1.0",
+			"skinnedNode": "George",
+			"attachments": [],
+			"dropJoints": ["^Palm", "^Pinky", "^Ring", "^Index", "^Thumb", "^PoleTarget"],
+			"clips": { "idle": "Idle", "run": "Walk", "shoot": "Shoot", "die": "Death" },
+			"aimJoint": "Torso",
+			"height": 3.6,
+			"triangles": 3000
+		}
+	]
+}
