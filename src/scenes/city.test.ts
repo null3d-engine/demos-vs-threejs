@@ -6,6 +6,7 @@ import {
 	CAR_LANE_OFFSET,
 	CARS_PER_BLOCK,
 	CarState,
+	CITY_CAMERA,
 	type CityState,
 	carTransform,
 	cityMeshes,
@@ -14,6 +15,7 @@ import {
 	cityTriangles,
 	createCity,
 	isGreen,
+	MAX_BLOCKS,
 	PAVEMENT_OFFSET,
 	PEOPLE_PER_BLOCK,
 	PITCH,
@@ -23,7 +25,7 @@ import {
 	stepCity,
 	windowOf,
 } from './city';
-import { SIM_STEP, stepsUntil } from './common';
+import { SIM_STEP, sampleCameraLoop, stepsUntil } from './common';
 import { triangleCount } from './geometry';
 
 function run(state: CityState, steps: number): void {
@@ -178,6 +180,68 @@ describe('city simulation', () => {
 			carTransform(state, c, position);
 			expect(Math.abs(position[0]!)).toBeLessThanOrEqual(limit);
 			expect(Math.abs(position[2]!)).toBeLessThanOrEqual(limit);
+		}
+	});
+});
+
+describe('city camera', () => {
+	// Every block of the largest city, found by its grid cell.
+	const blockAt = new Map<string, number>();
+	const cellOf = new Int32Array(2);
+	for (let block = 0; block < MAX_BLOCKS; block++) {
+		blockCell(block, cellOf);
+		blockAt.set(`${cellOf[0]},${cellOf[1]}`, block);
+	}
+	const position = new Float64Array(3);
+	const target = new Float64Array(3);
+	const base = new Float64Array(3);
+	const size = new Float64Array(3);
+	const SAMPLES = 7000;
+
+	/** The distance from the camera to the nearest building of the blocks around it. */
+	function nearestBuilding(): number {
+		const bx = Math.round((position[0] as number) / PITCH);
+		const bz = Math.round((position[2] as number) / PITCH);
+		let nearest = Number.POSITIVE_INFINITY;
+		for (let dx = -1; dx <= 1; dx++) {
+			for (let dz = -1; dz <= 1; dz++) {
+				const block = blockAt.get(`${bx + dx},${bz + dz}`);
+				if (block === undefined) continue;
+				for (let b = 0; b < 9; b++) {
+					buildingOf(block, b, base, size);
+					const x =
+						Math.abs((position[0] as number) - (base[0] as number)) - (size[0] as number) / 2;
+					const z =
+						Math.abs((position[2] as number) - (base[2] as number)) - (size[2] as number) / 2;
+					const y = (position[1] as number) - (size[1] as number);
+					nearest = Math.min(nearest, Math.hypot(Math.max(0, x), Math.max(0, y), Math.max(0, z)));
+				}
+			}
+		}
+		return nearest;
+	}
+
+	test('stays above the cars and people, and out of the buildings', () => {
+		let lowest = Number.POSITIVE_INFINITY;
+		let nearest = Number.POSITIVE_INFINITY;
+		for (let k = 0; k < SAMPLES; k++) {
+			sampleCameraLoop(CITY_CAMERA, (k / SAMPLES) * CITY_CAMERA.seconds, position, target);
+			lowest = Math.min(lowest, position[1] as number);
+			nearest = Math.min(nearest, nearestBuilding());
+		}
+		expect(lowest).toBeGreaterThan(4);
+		expect(nearest).toBeGreaterThan(3);
+	});
+
+	test('looks at a point well away from itself', () => {
+		for (let k = 0; k < SAMPLES; k++) {
+			sampleCameraLoop(CITY_CAMERA, (k / SAMPLES) * CITY_CAMERA.seconds, position, target);
+			const look = Math.hypot(
+				(target[0] as number) - (position[0] as number),
+				(target[1] as number) - (position[1] as number),
+				(target[2] as number) - (position[2] as number),
+			);
+			expect(look).toBeGreaterThan(10);
 		}
 	});
 });

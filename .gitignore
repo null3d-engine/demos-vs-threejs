@@ -14,3 +14,4 @@ runs/
 .claude/settings.local.json
 .DS_Store
 *.log
+assets/sources/

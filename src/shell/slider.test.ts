@@ -1,11 +1,13 @@
 import { describe, expect, test } from 'bun:test';
 import {
+	countRange,
 	countToSlider,
 	formatCount,
 	formatMegabytes,
 	formatShort,
 	SLIDER_STEPS,
 	sliderToCount,
+	startCount,
 } from './slider';
 
 describe('count slider', () => {
@@ -25,6 +27,36 @@ describe('count slider', () => {
 	test('counts outside the range stay at its ends', () => {
 		expect(countToSlider(1, 1_000, 1_000_000)).toBe(0);
 		expect(countToSlider(1e9, 1_000, 1_000_000)).toBe(SLIDER_STEPS);
+	});
+
+	test('runs from a tenth of the start count to the ramp maximum', () => {
+		expect(countRange({ start: 1_000, max: 20_000 })).toEqual({ min: 100, max: 20_000 });
+		expect(countRange({ start: 4, max: 50 })).toEqual({ min: 1, max: 50 });
+	});
+});
+
+describe('start count', () => {
+	const plan = { start: 1_000, max: 20_000 };
+
+	test('is the ramp start without an address option', () => {
+		expect(startCount(null, plan)).toBe(1_000);
+	});
+
+	test('follows a whole-number option inside the slider range', () => {
+		expect(startCount('250', plan)).toBe(250);
+		expect(startCount('20000', plan)).toBe(20_000);
+	});
+
+	test('keeps an option outside the range at its ends', () => {
+		expect(startCount('3', plan)).toBe(100);
+		expect(startCount('-5', plan)).toBe(100);
+		expect(startCount('900000', plan)).toBe(20_000);
+	});
+
+	test('ignores an option that is not a whole number', () => {
+		for (const option of ['', ' ', 'ten', '12.5', 'NaN', 'Infinity']) {
+			expect(startCount(option, plan)).toBe(1_000);
+		}
 	});
 });
 
