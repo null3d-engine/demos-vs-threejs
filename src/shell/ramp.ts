@@ -61,6 +61,10 @@ export interface StepResult {
 	frameMsP95: number;
 	/** CPU milliseconds per frame on the busiest thread, where known. */
 	cpuMs: number | null;
+	/** The part of the CPU time that the shared scene logic took, where known. */
+	logicMs?: number | null;
+	/** GPU milliseconds per frame, where measured. */
+	gpuMs?: number | null;
 }
 
 /**

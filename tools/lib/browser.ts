@@ -17,14 +17,22 @@ export const SOFTWARE_GPU_ARGS = [
 /** The page size the tools and tests draw at: the desktop device class, at pixel ratio 1. */
 export const VIEWPORT = { width: 1280, height: 800 };
 
+/**
+ * Starts Chromium. On the software GPU: Playwright's own Chromium (or CHROMIUM_PATH), headless. On
+ * the machine's GPU: the installed Google Chrome, shown, with the WebGPU developer features that
+ * keep GPU timestamps from being rounded, as the null3D engine's benchmark does.
+ */
 export async function launchChromium(options: {
 	gpu: 'software' | 'hardware';
 	chrome: string | null;
 	headed?: boolean;
 }): Promise<Browser> {
+	const executablePath = options.chrome ?? process.env.CHROMIUM_PATH ?? undefined;
+	if (options.gpu === 'software')
+		return chromium.launch({ executablePath, headless: !options.headed, args: SOFTWARE_GPU_ARGS });
 	return chromium.launch({
-		executablePath: options.chrome ?? process.env.CHROMIUM_PATH ?? undefined,
-		headless: !options.headed,
-		args: options.gpu === 'software' ? SOFTWARE_GPU_ARGS : ['--enable-unsafe-webgpu'],
+		...(executablePath ? { executablePath } : { channel: 'chrome' }),
+		headless: false,
+		args: ['--enable-webgpu-developer-features'],
 	});
 }

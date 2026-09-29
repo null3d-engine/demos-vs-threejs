@@ -186,6 +186,31 @@ test('the hold option draws one still frame with no readout', async ({ page }) =
 	expect(errors).toEqual([]);
 });
 
+test('the bench option measures after a warm-up and hands the figures to the tools', async ({
+	page,
+}) => {
+	const errors = watchErrors(page);
+	await page.goto('/?scene=factory&gpu=webgl2&count=2000&bench=2');
+	const handle = await page.waitForFunction(
+		() => (globalThis as { __demoResult?: unknown }).__demoResult,
+		undefined,
+		{ timeout: 60_000 },
+	);
+	const result = (await handle.jsonValue()) as {
+		ok: boolean;
+		kind: string;
+		count: number;
+		seconds: number;
+		measurement: { frames: number; cpuMsMedian: number; logicMsMedian: number; gpuMsMedian: null };
+	};
+	expect(result).toMatchObject({ ok: true, kind: 'bench', count: 2000, seconds: 2 });
+	expect(result.measurement.frames).toBeGreaterThan(0);
+	expect(result.measurement.cpuMsMedian).toBeGreaterThan(result.measurement.logicMsMedian);
+	expect(result.measurement.gpuMsMedian).toBeNull();
+	await expect(page.locator('body[data-result="ready"]')).toBeAttached();
+	expect(errors).toEqual([]);
+});
+
 test('Auto starts three.js on one of the GPU paths', async ({ page }) => {
 	await page.goto('/?scene=factory');
 	await expect(readout(page)).toContainText(

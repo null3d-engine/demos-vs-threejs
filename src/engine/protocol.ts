@@ -38,6 +38,11 @@ export interface StartOptions {
 	 * The scene does not move, and pausing or resuming changes nothing.
 	 */
 	hold: boolean;
+	/**
+	 * Measure GPU time with timestamp queries. The queries cost time themselves, so GPU time comes
+	 * from runs of its own.
+	 */
+	gpuTime: boolean;
 	/** Canvas size in CSS pixels, and the device pixels per CSS pixel to draw at. */
 	width: number;
 	height: number;
@@ -65,6 +70,15 @@ export interface Measurement {
 	/** CPU milliseconds per frame on the engine's busiest thread. */
 	cpuMsMedian: number;
 	cpuMsP95: number;
+	/**
+	 * The part of the CPU time that the shared scene logic took: the same code in both engines, so
+	 * the rest is each engine's own work.
+	 */
+	logicMsMedian: number;
+	logicMsP95: number;
+	/** GPU milliseconds per frame, from timestamp queries; null when not measured. */
+	gpuMsMedian: number | null;
+	gpuMsP95: number | null;
 	drawCalls: number;
 	/** Objects and triangles in the scene at the end of the stretch. */
 	objects: number;

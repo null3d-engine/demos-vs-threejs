@@ -19,7 +19,8 @@
 		"typecheck": "tsc -p tsconfig.json && tsc -p tsconfig.node.json",
 		"test:browser": "playwright test",
 		"assets": "bun tools/assets.ts",
-		"parity": "bun tools/parity.ts"
+		"parity": "bun tools/parity.ts",
+		"bench": "bun tools/bench.ts"
 	},
 	"dependencies": {
 		"three": "0.186.1"
