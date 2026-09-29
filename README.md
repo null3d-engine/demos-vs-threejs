@@ -1,8 +1,8 @@
-# null3d vs three.js
+# null3D vs three.js
 
-Three demo scenes, each drawn by [null3d](https://github.com/null3d-engine/null3d) and by a tuned three.js. Both versions of a scene look the same. A count slider adds objects until one engine can no longer keep up, and a live readout shows what each engine does.
+Three demo scenes, each drawn by [null3D](https://github.com/null3d-engine/null3d) and by a tuned three.js. Both versions of a scene look the same. A count slider adds objects until one engine can no longer keep up, and a live readout shows what each engine does.
 
-Status: in progress. The three.js versions come first. The null3d versions follow the null3d releases up to 1.0.
+Status: in progress. The three.js versions come first. The null3D versions follow the null3D releases up to 1.0.
 
 ## The scenes
 
@@ -16,7 +16,7 @@ Status: in progress. The three.js versions come first. The null3d versions follo
 
 1. Each scene has one shared description: seed, models, colors, lights, camera path and a fixed-step simulation. Both engines run the same scene code and reach the same state at the same time.
 2. Both engines draw at the same size and pixel ratio, with 4x MSAA, the same tone mapping and the high-performance GPU.
-3. null3d's automatic quality drop is off. three.js also draws at a fixed resolution.
+3. null3D's automatic quality drop is off. three.js also draws at a fixed resolution.
 4. The three.js version uses three.js 0.186.1, its add-ons and the methods of its official examples, plus normal game code. It runs in one worker with an OffscreenCanvas. It uses the faster of its two renderers on each device.
 5. Every effect is a switch. An effect is on only when both engines draw it the same way, as an image check shows.
 6. One engine runs at a time.
