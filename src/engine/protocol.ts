@@ -13,6 +13,14 @@ export type GpuChoice = 'auto' | 'webgpu' | 'webgl2';
 /** The GPU path an engine ended up on. */
 export type GpuPath = 'webgpu' | 'webgl2';
 
+/**
+ * How three.js draws the battle's crowd on WebGL2: `draw` skins every unit in one draw per model
+ * (the WebGPU renderer's WebGL2 mode); `skinned` gives each unit its own skinned mesh (the
+ * WebGL renderer). WebGPU always uses `draw`.
+ */
+export type CrowdWay = 'draw' | 'skinned';
+export const CROWD_WAYS: readonly CrowdWay[] = ['draw', 'skinned'];
+
 export interface StartOptions {
 	scene: SceneId;
 	deviceClass: DeviceClass;
@@ -22,6 +30,9 @@ export interface StartOptions {
 	capacity: number;
 	effects: Effects;
 	gpu: GpuChoice;
+	crowd: CrowdWay;
+	/** Simulation seconds to run before the first frame, to start the scene at a set time. */
+	startSeconds: number;
 	/** Canvas size in CSS pixels, and the device pixels per CSS pixel to draw at. */
 	width: number;
 	height: number;
@@ -33,6 +44,8 @@ export interface Started {
 	/** The engine's version, such as `three.js 0.186.1`. */
 	version: string;
 	gpu: GpuPath;
+	/** The renderer that draws, such as `WebGPURenderer` or `WebGLRenderer`. */
+	renderer: string;
 	/** True when the engine draws in a worker; false when it had to draw on the page's thread. */
 	inWorker: boolean;
 }

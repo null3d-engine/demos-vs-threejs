@@ -5,9 +5,11 @@ import {
 	formatCount,
 	formatMegabytes,
 	formatShort,
+	MAX_START_SECONDS,
 	SLIDER_STEPS,
 	sliderToCount,
 	startCount,
+	startSeconds,
 } from './slider';
 
 describe('count slider', () => {
@@ -67,5 +69,18 @@ describe('formatting', () => {
 		expect(formatShort(61_917)).toBe('62k');
 		expect(formatShort(950)).toBe('950');
 		expect(formatMegabytes(412 * 1024 * 1024)).toBe('412 MB');
+	});
+});
+
+describe('start time', () => {
+	test('is 0 without an address option or with one that is not a number', () => {
+		for (const option of [null, '', 'soon', 'NaN', 'Infinity'])
+			expect(startSeconds(option)).toBe(0);
+	});
+
+	test('follows the option, kept between 0 and the most', () => {
+		expect(startSeconds('42.5')).toBe(42.5);
+		expect(startSeconds('-3')).toBe(0);
+		expect(startSeconds('100000')).toBe(MAX_START_SECONDS);
 	});
 });

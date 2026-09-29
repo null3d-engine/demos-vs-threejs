@@ -39,6 +39,19 @@ export function startCount(option: string | null, plan: CountPlan): number {
 	return Math.min(max, Math.max(min, asked));
 }
 
+/** The most simulation seconds the `at` option may skip: ten minutes. */
+export const MAX_START_SECONDS = 600;
+
+/**
+ * The simulation time a scene starts at: the page address's `at` option in seconds, kept between 0
+ * and MAX_START_SECONDS; else 0.
+ */
+export function startSeconds(option: string | null): number {
+	const asked = option === null || option.trim() === '' ? Number.NaN : Number(option);
+	if (!Number.isFinite(asked)) return 0;
+	return Math.min(MAX_START_SECONDS, Math.max(0, asked));
+}
+
 /** Groups a whole number's digits: 61917 becomes "61,917". */
 export function formatCount(value: number): string {
 	return Math.round(value).toLocaleString('en-US');

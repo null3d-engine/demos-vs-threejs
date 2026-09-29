@@ -176,3 +176,22 @@ describe('sampleCameraLoop', () => {
 		for (let axis = 0; axis < 3; axis++) expect(a[axis]).toBeCloseTo(b[axis]!, 9);
 	});
 });
+
+describe('FixedClock.skipTo', () => {
+	test('moves to a set time and says how many steps to run', () => {
+		const clock = new FixedClock();
+		expect(clock.skipTo(2)).toBe(stepsUntil(2));
+		expect(clock.time).toBeCloseTo(2, 9);
+		expect(clock.steps).toBe(stepsUntil(2));
+		// Frames then go on from there.
+		expect(clock.advance(SIM_STEP * 3)).toBe(3);
+		expect(clock.steps).toBe(stepsUntil(2) + 3);
+	});
+
+	test('never goes back', () => {
+		const clock = new FixedClock();
+		clock.skipTo(1);
+		expect(clock.skipTo(0.5)).toBe(0);
+		expect(clock.time).toBeCloseTo(1, 9);
+	});
+});

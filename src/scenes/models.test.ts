@@ -64,6 +64,32 @@ describe('battle models', () => {
 				expect(weight.reduce((sum, w) => sum + w, 0)).toBeCloseTo(1, 2);
 			}
 
+			// Only the joints, the mesh and their parents: no unused node for an engine to move.
+			const mesh = root.listNodes().find((node) => node.getMesh());
+			for (const node of root.listNodes()) {
+				const holdsJoints = node.listChildren().some((child) => joints.includes(child));
+				expect(joints.includes(node) || node === mesh || holdsJoints).toBe(true);
+			}
+
+			// Every channel moves its joint: a channel that holds the rest value only costs time.
+			for (const animation of root.listAnimations()) {
+				for (const channel of animation.listChannels()) {
+					const output = channel.getSampler()?.getOutput()?.getArray() ?? [];
+					const node = channel.getTargetNode();
+					const rest =
+						channel.getTargetPath() === 'rotation'
+							? (node?.getRotation() ?? [])
+							: (node?.getTranslation() ?? []);
+					let moves = false;
+					for (let i = 0; i < output.length && !moves; i++) {
+						const wanted = rest[i % rest.length] as number;
+						const value = output[i] as number;
+						moves = Math.abs(value - wanted) > 1e-5 && Math.abs(value + wanted) > 1e-5;
+					}
+					expect(moves).toBe(true);
+				}
+			}
+
 			const clips = root.listAnimations().map((animation) => animation.getName());
 			expect(clips.sort()).toEqual(Object.keys(Clip).sort());
 			for (const clip of Object.keys(Clip) as (keyof typeof Clip)[]) {

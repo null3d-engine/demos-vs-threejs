@@ -14,6 +14,8 @@ export interface RunFile {
 	/** The engine and its version, such as `three.js 0.186.1`. */
 	engineVersion: string;
 	gpu: GpuPath;
+	/** The renderer that drew, such as `WebGPURenderer` or `WebGLRenderer`. */
+	renderer: string;
 	inWorker: boolean;
 	deviceClass: DeviceClass;
 	displayHz: number;

@@ -44,6 +44,8 @@ Add these to the page address, for example `/?scene=city&gpu=webgl2&count=500`.
 | `gpu` | `auto`, `webgpu`, `webgl2` | `auto`: WebGPU where it works, else WebGL2 |
 | `effects` | Effect names, separated by commas: `shadows`, `fog`, `glow` | The scene's effects |
 | `count` | The count to start with. The page keeps it inside the slider's range. | The auto-slide's start count |
+| `at` | Simulation seconds to run before the first frame, from 0 to 600, to start the scene at a set moment | `0` |
+| `crowd` | How three.js draws the battle's soldiers on WebGL2: `draw` (one draw per model, in the WebGPU renderer's WebGL2 mode) or `skinned` (one skinned model per soldier, in the WebGL renderer). WebGPU always uses `draw`. | `draw` |
 
 ## Commands
 

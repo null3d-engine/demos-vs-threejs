@@ -1,15 +1,18 @@
 import { describe, expect, test } from 'bun:test';
 import {
 	activeTanks,
+	BATTLE_CAMERA,
+	BATTLE_VIEW,
 	type BattleState,
 	battleMeshes,
 	battleObjects,
 	battleTriangles,
 	Clip,
 	createBattle,
+	FIELD_HALF,
 	FORMATION_COLUMNS,
 	formationSlot,
-	GROUND_HALF,
+	GROUND_HALF_SIZE,
 	GROUND_OBJECTS,
 	MECH_EVERY,
 	mechsPerArmy,
@@ -21,7 +24,7 @@ import {
 	UnitState,
 	unitKindOf,
 } from './battle';
-import { stepsUntil } from './common';
+import { sampleCameraLoop, stepsUntil } from './common';
 import { triangleCount } from './geometry';
 
 function run(state: BattleState, steps: number): void {
@@ -128,8 +131,8 @@ describe('battle simulation', () => {
 		const state = createBattle(500);
 		run(state, stepsUntil(60));
 		for (let u = 0; u < 1_000; u++) {
-			expect(Math.abs(state.x[u]!)).toBeLessThanOrEqual(GROUND_HALF.x);
-			expect(Math.abs(state.z[u]!)).toBeLessThanOrEqual(GROUND_HALF.z);
+			expect(Math.abs(state.x[u]!)).toBeLessThanOrEqual(FIELD_HALF.x);
+			expect(Math.abs(state.z[u]!)).toBeLessThanOrEqual(FIELD_HALF.z);
 		}
 	});
 
@@ -146,5 +149,22 @@ describe('battle simulation', () => {
 			expect(state.state[u]).toBe(UnitState.march);
 		}
 		expect(activeTanks(state)).toBe(tanksPerArmy(600));
+	});
+});
+
+describe('battle view', () => {
+	test('the drawn ground reaches past the end of the fog from every camera position', () => {
+		const position = new Float64Array(3);
+		const target = new Float64Array(3);
+		let farthest = 0;
+		for (let k = 0; k < 900; k++) {
+			sampleCameraLoop(BATTLE_CAMERA, (k / 900) * BATTLE_CAMERA.seconds, position, target);
+			farthest = Math.max(
+				farthest,
+				Math.abs(position[0] as number),
+				Math.abs(position[2] as number),
+			);
+		}
+		expect(GROUND_HALF_SIZE).toBeGreaterThanOrEqual(farthest + BATTLE_VIEW.fog.far);
 	});
 });
