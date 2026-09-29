@@ -1,13 +1,13 @@
-import { expect, type Page, test } from '@playwright/test';
+import { writeFileSync } from 'node:fs';
+import { expect, type Page, type TestInfo, test } from '@playwright/test';
 import { decode } from 'fast-png';
-import { cityObjects } from '../src/scenes/city';
 import { factoryObjects } from '../src/scenes/factory';
 import { SCENES, type SceneId } from '../src/scenes/index';
 import { formatCount, SLIDER_STEPS, sliderToCount } from '../src/shell/slider';
 
-/** The share of the view's pixels that differ clearly from the scene's background. */
-async function drawnShare(page: Page, background: [number, number, number]): Promise<number> {
-	const image = decode(await page.locator('#view').screenshot());
+/** The share of an image's pixels that differ clearly from the scene's background. */
+function drawnShare(png: Buffer, background: [number, number, number]): number {
+	const image = decode(png);
 	const channels = image.channels;
 	let drawn = 0;
 	const pixels = image.width * image.height;
@@ -22,40 +22,93 @@ async function drawnShare(page: Page, background: [number, number, number]): Pro
 	return drawn / pixels;
 }
 
+/**
+ * Waits until much of the view shows the scene, not the background. The last screenshot is kept
+ * with the test's results, so a reviewer can look at each scene on each GPU path.
+ */
+async function expectDrawn(
+	page: Page,
+	background: [number, number, number],
+	testInfo: TestInfo,
+): Promise<void> {
+	let last: Buffer | null = null;
+	await expect
+		.poll(
+			async () => {
+				last = await page.locator('#view').screenshot();
+				return drawnShare(last, background);
+			},
+			{ timeout: 60_000 },
+		)
+		.toBeGreaterThan(0.3);
+	if (last) writeFileSync(testInfo.outputPath('view.png'), last);
+}
+
+/** Collects console errors of the page and its worker: a shader that does not build logs one. */
+function watchErrors(page: Page): string[] {
+	const errors: string[] = [];
+	page.on('console', (message) => {
+		if (message.type() === 'error') errors.push(message.text());
+	});
+	page.on('pageerror', (error) => errors.push(error.message));
+	return errors;
+}
+
 const readout = (page: Page) => page.locator('#readout');
 
+/** The objects the readout shows. */
+async function shownObjects(page: Page): Promise<number> {
+	const text = (await readout(page).textContent()) ?? '';
+	const found = /Objects ([0-9,]+)/.exec(text);
+	return found ? Number((found[1] as string).replaceAll(',', '')) : -1;
+}
+
 /**
- * Each scene with a three.js version: its background, the count the tests start it with, and its
- * objects at a count. The software GPU can need a second per frame, and a screenshot waits for a
- * quiet frame, so the tests use a light count.
+ * Each scene with a three.js version: its background, and the count the tests start it with. The
+ * software GPU can need seconds per frame, and a screenshot waits for a quiet frame, so the tests
+ * use a light count. The battle's objects change as shots fly, so the test checks that it shows
+ * at least its units, tanks and ground.
  */
 const SCENE_CHECKS: {
 	scene: SceneId;
 	background: [number, number, number];
 	count: number;
-	objects: (count: number) => number;
+	exactObjects: boolean;
 }[] = [
-	{ scene: 'factory', background: [0x0e, 0x11, 0x16], count: 10_000, objects: factoryObjects },
-	{ scene: 'city', background: [0x05, 0x07, 0x0d], count: 100, objects: cityObjects },
+	{ scene: 'factory', background: [0x0e, 0x11, 0x16], count: 10_000, exactObjects: true },
+	{ scene: 'city', background: [0x05, 0x07, 0x0d], count: 100, exactObjects: true },
+	{ scene: 'battle', background: [0xa9, 0xb8, 0xc9], count: 100, exactObjects: false },
 ];
 
-for (const { scene, background, count, objects } of SCENE_CHECKS) {
+/** Checks the readout's count and objects for a scene at `count`. */
+async function expectCounted(page: Page, scene: SceneId, count: number, exact: boolean) {
 	const info = SCENES[scene];
+	await expect(readout(page)).toContainText(`${formatCount(count)} ${info.countUnit}`, {
+		timeout: 30_000,
+	});
+	const objects = await shownObjects(page);
+	if (exact) expect(objects).toBe(info.objectsAt(count));
+	else expect(objects).toBeGreaterThanOrEqual(info.objectsAt(count));
+}
 
-	test(`the ${scene} starts on WebGL2 in a worker and draws the scene`, async ({ page }) => {
+for (const { scene, background, count, exactObjects } of SCENE_CHECKS) {
+	test(`the ${scene} starts on WebGL2 in a worker and draws the scene`, async ({
+		page,
+	}, testInfo) => {
+		const errors = watchErrors(page);
 		await page.goto(`/?scene=${scene}&gpu=webgl2&count=${count}`);
 		await expect(readout(page)).toContainText('three.js 0.186.1 · WebGL2 · worker', {
 			timeout: 60_000,
 		});
-		await expect(readout(page)).toContainText(`${formatCount(count)} ${info.countUnit}`, {
-			timeout: 30_000,
-		});
-		await expect(readout(page)).toContainText(`Objects ${formatCount(objects(count))}`);
-		// Wait for a drawn frame, then check that much of the view shows the scene, not the background.
-		await expect.poll(() => drawnShare(page, background), { timeout: 60_000 }).toBeGreaterThan(0.3);
+		await expectCounted(page, scene, count, exactObjects);
+		await expectDrawn(page, background, testInfo);
+		expect(errors).toEqual([]);
 	});
 
-	test(`WebGPU draws the ${scene} where the browser runs three.js WebGPU`, async ({ page }) => {
+	test(`WebGPU draws the ${scene} where the browser runs three.js WebGPU`, async ({
+		page,
+	}, testInfo) => {
+		const errors = watchErrors(page);
 		await page.goto(`/?scene=${scene}&gpu=webgpu&count=${count}`);
 		const started = readout(page).filter({ hasText: 'WebGPU' });
 		const failed = page.locator('#status', { hasText: 'could not start' });
@@ -67,8 +120,31 @@ for (const { scene, background, count, objects } of SCENE_CHECKS) {
 			status.includes("'swizzle'"),
 			'This Chromium refuses the texture swizzle setting of three.js 0.186.',
 		);
-		await expect(readout(page)).toContainText('three.js 0.186.1 · WebGPU');
-		await expect.poll(() => drawnShare(page, background), { timeout: 60_000 }).toBeGreaterThan(0.3);
+		await expect(readout(page)).toContainText(
+			'three.js 0.186.1 · WebGPU · worker · WebGPURenderer',
+		);
+		await expectCounted(page, scene, count, exactObjects);
+		await expectDrawn(page, background, testInfo);
+		expect(errors).toEqual([]);
+	});
+}
+
+for (const [crowd, renderer] of [
+	['draw', 'WebGPURenderer, WebGL2 mode'],
+	['skinned', 'WebGLRenderer'],
+] as const) {
+	test(`on WebGL2 the battle's ${crowd} crowd draws with the ${renderer}, in the fight`, async ({
+		page,
+	}, testInfo) => {
+		const errors = watchErrors(page);
+		// At 58 seconds the armies are in range: units aim, fire, fall and get up again.
+		await page.goto(`/?scene=battle&gpu=webgl2&count=100&crowd=${crowd}&at=58`);
+		await expect(readout(page)).toContainText(`WebGL2 · worker · ${renderer}`, {
+			timeout: 60_000,
+		});
+		await expectCounted(page, 'battle', 100, false);
+		await expectDrawn(page, [0xa9, 0xb8, 0xc9], testInfo);
+		expect(errors).toEqual([]);
 	});
 }
 

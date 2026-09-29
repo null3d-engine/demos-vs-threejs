@@ -617,8 +617,10 @@ export type BattleMesh =
 	| 'blast'
 	| 'ground';
 
-/** The half-size of the ground. */
-export const GROUND_HALF = { x: GRID_HALF_X, z: GRID_HALF_Z } as const;
+/** The half-size of the field that units move on. */
+export const FIELD_HALF = { x: GRID_HALF_X, z: GRID_HALF_Z } as const;
+/** The half-size of the drawn ground: past the end of the fog, so no edge shows. */
+export const GROUND_HALF_SIZE = 1_200;
 
 export function battleMeshes(): Record<BattleMesh, MeshData> {
 	return {
@@ -629,7 +631,7 @@ export function battleMeshes(): Record<BattleMesh, MeshData> {
 		tracer: boxGeometry(0.06, 0.06, 1.8),
 		shell: boxGeometry(0.25, 0.25, 0.6),
 		blast: sphereGeometry(1, 12, 8),
-		ground: translated(boxGeometry(GRID_HALF_X * 2, 0.2, GRID_HALF_Z * 2), 0, -0.1, 0),
+		ground: translated(boxGeometry(GROUND_HALF_SIZE * 2, 0.2, GROUND_HALF_SIZE * 2), 0, -0.1, 0),
 	};
 }
 
@@ -671,8 +673,12 @@ export function battleTriangles(
 }
 
 export const ARMY_COLORS: readonly [Hex, Hex] = ['#4f6d3a', '#7a5a3c'];
+/** Each army's tint of its soldiers and mechs: it multiplies the colors of the model files. */
+export const UNIT_TINTS: readonly [Hex, Hex] = ['#c4dca8', '#ecc2a2'];
 
 export const BATTLE_MATERIALS = {
+	/** Soldiers and mechs: the colors come from the model files, times the army's tint. */
+	unit: { roughness: 0.8, metalness: 0 },
 	tank: { roughness: 0.7, metalness: 0.3 },
 	tracer: { color: '#ffe08a' as Hex, unlit: true },
 	shell: { color: '#303030' as Hex, roughness: 0.5, metalness: 0.7 },

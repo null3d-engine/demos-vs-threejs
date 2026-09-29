@@ -2,7 +2,7 @@
 // allows it, or on the page's thread where it does not (Safari before 17 has no WebGL2 in workers).
 
 import type { FromEngine, Measurement, Started, StartOptions, ToEngine } from '../engine/protocol';
-import { ThreeRuntime } from '../threejs/runtime';
+import type { ThreeRuntime } from '../threejs/runtime';
 import type { EngineAdapter } from './types';
 
 export class ThreeAdapter implements EngineAdapter {
@@ -61,6 +61,8 @@ export class ThreeAdapter implements EngineAdapter {
 
 	private async startOnPage(canvas: HTMLCanvasElement, options: StartOptions): Promise<Started> {
 		let started: Started | null = null;
+		// three.js loads on the page only when it cannot run in a worker.
+		const { ThreeRuntime } = await import('../threejs/runtime');
 		const runtime = new ThreeRuntime(
 			canvas,
 			options,

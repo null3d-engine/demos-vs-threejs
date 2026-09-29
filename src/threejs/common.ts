@@ -3,6 +3,7 @@
 // draw with the other module's renderer, so scenes never import three.js classes themselves.
 
 import type * as ThreeModule from 'three';
+import type { CrowdWay } from '../engine/protocol';
 import type { Effects } from '../scenes/effects';
 import type { MeshData } from '../scenes/geometry';
 
@@ -10,11 +11,25 @@ export { writeMatrix, writeQuaternionMatrix } from './matrices';
 
 export type Three = typeof ThreeModule;
 
+/**
+ * The renderer a scene draws with: the WebGPU renderer on WebGPU, the WebGPU renderer in its WebGL2
+ * mode, or the WebGL renderer.
+ */
+export type RendererKind = 'webgpu' | 'webgpu-webgl2' | 'webgl';
+
+export const RENDERER_NAMES: Readonly<Record<RendererKind, string>> = {
+	webgpu: 'WebGPURenderer',
+	'webgpu-webgl2': 'WebGPURenderer, WebGL2 mode',
+	webgl: 'WebGLRenderer',
+};
+
 export interface BuildOptions {
 	/** The largest count of this run: every object is made up front, and a count only shows some. */
 	capacity: number;
 	count: number;
 	effects: Effects;
+	renderer: RendererKind;
+	crowd: CrowdWay;
 }
 
 /** A built scene, ready to step and draw. */
@@ -31,7 +46,14 @@ export interface SceneBuild {
 	triangles(): number;
 }
 
-export type Builder = (three: Three, options: BuildOptions) => SceneBuild;
+/** Builds a scene; a scene that loads files builds it asynchronously. */
+export type Builder = (three: Three, options: BuildOptions) => SceneBuild | Promise<SceneBuild>;
+
+/** A scene's three.js version: its builder, and the renderer it draws with on WebGL2. */
+export interface SceneModule {
+	build: Builder;
+	webgl2Renderer(options: { crowd: CrowdWay }): 'webgl' | 'webgpu-webgl2';
+}
 
 /** A BufferGeometry that holds the shared mesh data as it is. */
 export function toGeometry(three: Three, mesh: MeshData): ThreeModule.BufferGeometry {

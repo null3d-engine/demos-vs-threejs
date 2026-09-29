@@ -16,6 +16,7 @@ import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 import {
 	type Accessor,
+	type AnimationChannel,
 	type Document,
 	type Node,
 	NodeIO,
@@ -82,6 +83,30 @@ async function sourcePath(source: Source): Promise<string> {
 			`${source.local} has SHA-256 ${hash}; assets/source.json expects ${source.sha256}.`,
 		);
 	return path;
+}
+
+/**
+ * True when a channel holds its node at the node's own rest value all through the clip. Without
+ * the channel the node keeps that value, so the channel only costs time.
+ */
+function holdsRest(channel: AnimationChannel, node: Node): boolean {
+	const path = channel.getTargetPath();
+	const rest =
+		path === 'translation'
+			? node.getTranslation()
+			: path === 'rotation'
+				? node.getRotation()
+				: null;
+	const output = channel.getSampler()?.getOutput()?.getArray();
+	if (!rest || !output) return false;
+	for (let i = 0; i < output.length; i++) {
+		const value = output[i] as number;
+		const wanted = rest[i % rest.length] as number;
+		// A rotation and its negative are the same turn.
+		const negated = path === 'rotation' ? -wanted : wanted;
+		if (Math.abs(value - wanted) > 1e-5 && Math.abs(value - negated) > 1e-5) return false;
+	}
+	return true;
 }
 
 /** The node with this name; a node that carries a mesh wins over a joint of the same name. */
@@ -295,8 +320,11 @@ async function makeModel(io: NodeIO, source: Source): Promise<ModelFacts> {
 		animation.setName(id);
 		for (const channel of animation.listChannels()) {
 			const target = channel.getTargetNode();
-			if (target && dropped(target)) channel.dispose();
+			if (!target || dropped(target) || holdsRest(channel, target)) channel.dispose();
 		}
+		// Samplers that no channel uses any more go too.
+		const used = new Set(animation.listChannels().map((channel) => channel.getSampler()));
+		for (const sampler of animation.listSamplers()) if (!used.has(sampler)) sampler.dispose();
 		let length = 0;
 		for (const sampler of animation.listSamplers()) {
 			const times = sampler.getInput()?.getArray();
@@ -306,6 +334,8 @@ async function makeModel(io: NodeIO, source: Source): Promise<ModelFacts> {
 	}
 	for (const id of Object.keys(clipLengths) as (keyof typeof clipLengths)[])
 		if (clipLengths[id] === 0) throw new Error(`${source.name} has no clip ${source.clips[id]}.`);
+	// Dropped joints and helper nodes go from the scene, so nothing moves them for nothing.
+	for (const node of root.listNodes()) if (dropped(node)) node.dispose();
 
 	// 4. Simplify, then drop what nothing uses.
 	const before = (joined.getIndices()?.getCount() ?? 0) / 3;

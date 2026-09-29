@@ -92,6 +92,19 @@ export class FixedClock {
 		this.time = this.steps * SIM_STEP;
 		return steps;
 	}
+
+	/**
+	 * Moves the clock forward to `seconds` of simulation at once, and returns how many steps to run
+	 * to get there. Used before the first frame, to start a scene at a set time.
+	 */
+	skipTo(seconds: number): number {
+		const target = Math.max(this.steps, stepsUntil(seconds));
+		const steps = target - this.steps;
+		this.steps = target;
+		this.time = target * SIM_STEP;
+		this.carry = 0;
+		return steps;
+	}
 }
 
 /** The number of steps from 0 to `seconds`: the state that hold frames and tests look at. */

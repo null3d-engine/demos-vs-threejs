@@ -8,22 +8,29 @@ import type { FromEngine, GpuPath, Measurement, StartOptions } from '../engine/p
 import { FrameSamples } from '../engine/samples';
 import { FixedClock } from '../scenes/common';
 import type { SceneId } from '../scenes/index';
+import { battleModule } from './battle';
 import { buildCity } from './city';
-import type { Builder, SceneBuild, Three } from './common';
+import {
+	RENDERER_NAMES,
+	type RendererKind,
+	type SceneBuild,
+	type SceneModule,
+	type Three,
+} from './common';
 import { buildFactory } from './factory';
 
 /** The three.js version the demos pin. */
 export const THREE_VERSION = '0.186.1';
 
-const BUILDERS: Partial<Record<SceneId, Builder>> = {
-	factory: buildFactory,
-	city: buildCity,
-};
+/** Scenes drawn with plain batches use the WebGL renderer on WebGL2. */
+const onWebGLRenderer = () => 'webgl' as const;
 
-/** Scenes with a three.js version so far. */
-export function hasThreeScene(scene: SceneId): boolean {
-	return BUILDERS[scene] !== undefined;
-}
+/** Every scene listed in `scenes.ts`, which the page reads without loading three.js. */
+const SCENE_MODULES: Partial<Record<SceneId, SceneModule>> = {
+	factory: { build: buildFactory, webgl2Renderer: onWebGLRenderer },
+	city: { build: buildCity, webgl2Renderer: onWebGLRenderer },
+	battle: battleModule,
+};
 
 /** How often the live readout gets new figures. */
 const STATS_MS = 500;
@@ -56,9 +63,9 @@ export class ThreeRuntime {
 
 	async start(): Promise<void> {
 		const { options } = this;
-		const builder = BUILDERS[options.scene];
-		if (!builder) throw new Error(`The ${options.scene} scene has no three.js version yet.`);
-		const { three, renderer, gpu } = await this.makeRenderer();
+		const module = SCENE_MODULES[options.scene];
+		if (!module) throw new Error(`The ${options.scene} scene has no three.js version yet.`);
+		const { three, renderer, gpu, kind } = await this.makeRenderer(module);
 		this.renderer = renderer;
 		renderer.setPixelRatio(options.pixelRatio);
 		renderer.setSize(options.width, options.height, false);
@@ -68,15 +75,19 @@ export class ThreeRuntime {
 		renderer.outputColorSpace = three.SRGBColorSpace;
 		renderer.shadowMap.enabled = options.effects.shadows;
 		renderer.shadowMap.type = three.PCFShadowMap;
-		const build = builder(three, {
+		const build = await module.build(three, {
 			capacity: options.capacity,
 			count: options.count,
 			effects: options.effects,
+			renderer: kind,
+			crowd: options.crowd,
 		});
 		this.build = build;
 		build.camera.aspect = options.width / options.height;
 		build.camera.updateProjectionMatrix();
-		build.pose(0);
+		const skipped = this.clock.skipTo(options.startSeconds);
+		for (let i = 0; i < skipped; i++) build.step();
+		build.pose(this.clock.time);
 		// Build every GPU program before the first frame, so none is built during a measurement.
 		await (
 			renderer as unknown as { compileAsync: (s: unknown, c: unknown) => Promise<void> }
@@ -87,6 +98,7 @@ export class ThreeRuntime {
 				engine: 'threejs',
 				version: `three.js ${THREE_VERSION}`,
 				gpu,
+				renderer: RENDERER_NAMES[kind],
 				inWorker: this.inWorker,
 			},
 		});
@@ -97,23 +109,56 @@ export class ThreeRuntime {
 		renderer.setAnimationLoop(this.frame);
 	}
 
-	private async makeRenderer(): Promise<{ three: Three; renderer: AnyRenderer; gpu: GpuPath }> {
+	private async makeRenderer(
+		module: SceneModule,
+	): Promise<{ three: Three; renderer: AnyRenderer; gpu: GpuPath; kind: RendererKind }> {
 		const { canvas, options } = this;
-		const nav = (globalThis as { navigator?: { gpu?: unknown } }).navigator;
+		const nav = (globalThis as { navigator?: { gpu?: GPU } }).navigator;
 		if (options.gpu !== 'webgl2' && nav?.gpu) {
-			const webgpu = await import('three/webgpu');
-			const renderer = new webgpu.WebGPURenderer({
-				canvas: canvas as HTMLCanvasElement,
-				antialias: true,
-				powerPreference: 'high-performance',
-			}) as unknown as AnyRenderer;
-			await renderer.init?.();
-			if (renderer.backend?.isWebGPUBackend)
-				return { three: webgpu as unknown as Three, renderer, gpu: 'webgpu' };
-			renderer.dispose();
+			// Ask for an adapter first. Without one, the WebGPU renderer would fall back to a WebGL2
+			// context of its own on this canvas, made without the high-performance setting.
+			const adapter = await nav.gpu.requestAdapter({ powerPreference: 'high-performance' });
+			if (adapter) {
+				const webgpu = await import('three/webgpu');
+				const renderer = new webgpu.WebGPURenderer({
+					canvas: canvas as HTMLCanvasElement,
+					antialias: true,
+					powerPreference: 'high-performance',
+				}) as unknown as AnyRenderer;
+				await renderer.init?.();
+				if (renderer.backend?.isWebGPUBackend)
+					return { three: webgpu as unknown as Three, renderer, gpu: 'webgpu', kind: 'webgpu' };
+				renderer.dispose();
+			}
 			if (options.gpu === 'webgpu') throw new Error('three.js could not start WebGPU here.');
 		} else if (options.gpu === 'webgpu') {
 			throw new Error('This browser has no WebGPU.');
+		}
+		if (module.webgl2Renderer(options) === 'webgpu-webgl2') {
+			// The WebGPU renderer's WebGL2 mode makes its context without the GPU choice, so the
+			// context is made here, with the attributes that mode asks for.
+			const context = (canvas as HTMLCanvasElement).getContext('webgl2', {
+				antialias: true,
+				alpha: true,
+				depth: true,
+				stencil: false,
+				powerPreference: 'high-performance',
+			});
+			if (!context) throw new Error('This browser has no WebGL2.');
+			const webgpu = await import('three/webgpu');
+			const renderer = new webgpu.WebGPURenderer({
+				canvas: canvas as HTMLCanvasElement,
+				context,
+				forceWebGL: true,
+				antialias: true,
+			} as ConstructorParameters<typeof webgpu.WebGPURenderer>[0]) as unknown as AnyRenderer;
+			await renderer.init?.();
+			return {
+				three: webgpu as unknown as Three,
+				renderer,
+				gpu: 'webgl2',
+				kind: 'webgpu-webgl2',
+			};
 		}
 		const three = await import('three');
 		const renderer = new three.WebGLRenderer({
@@ -121,7 +166,7 @@ export class ThreeRuntime {
 			antialias: true,
 			powerPreference: 'high-performance',
 		}) as AnyRenderer;
-		return { three, renderer, gpu: 'webgl2' };
+		return { three, renderer, gpu: 'webgl2', kind: 'webgl' };
 	}
 
 	private readonly frame = (time: number): void => {

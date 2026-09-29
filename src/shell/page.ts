@@ -3,11 +3,18 @@
 
 import { ThreeAdapter } from '../adapters/threejs';
 import type { EngineAdapter } from '../adapters/types';
-import type { EngineKind, GpuChoice, Measurement, Started } from '../engine/protocol';
+import {
+	CROWD_WAYS,
+	type CrowdWay,
+	type EngineKind,
+	type GpuChoice,
+	type Measurement,
+	type Started,
+} from '../engine/protocol';
 import { type DeviceClass, deviceClass, renderPixelRatio } from '../scenes/device';
 import { type Effects, effectsFromText, effectsOf, effectsToText } from '../scenes/effects';
 import { SCENE_IDS, SCENES, type SceneId } from '../scenes/index';
-import { hasThreeScene } from '../threejs/runtime';
+import { hasThreeScene } from '../threejs/scenes';
 import { type ChartSeries, drawChart, ENGINE_NAMES } from './chart';
 import { measureDisplayHz } from './display';
 import { isolationProblem } from './isolation';
@@ -30,6 +37,7 @@ import {
 	formatShort,
 	sliderToCount,
 	startCount,
+	startSeconds,
 } from './slider';
 
 const STOP_TEXT: Readonly<Record<StopReason, string>> = {
@@ -73,6 +81,8 @@ export async function startPage(): Promise<void> {
 	if (!hasThreeScene(scene)) scene = 'factory';
 	let engine = pick<EngineKind>(params.get('engine'), ['threejs'], 'threejs');
 	let gpu = pick<GpuChoice>(params.get('gpu'), ['auto', 'webgpu', 'webgl2'], 'auto');
+	const crowd = pick<CrowdWay>(params.get('crowd'), CROWD_WAYS, 'draw');
+	const at = startSeconds(params.get('at'));
 	const effectsParam = params.get('effects');
 	let effects: Effects =
 		effectsParam === null ? effectsOf(SCENES[scene].effects) : effectsFromText(effectsParam);
@@ -132,7 +142,7 @@ export async function startPage(): Promise<void> {
 		const info = SCENES[scene];
 		const size = renderSize();
 		const lines = [
-			`${started.version} · ${started.gpu === 'webgpu' ? 'WebGPU' : 'WebGL2'} · ${started.inWorker ? 'worker' : 'page thread'}`,
+			`${started.version} · ${started.gpu === 'webgpu' ? 'WebGPU' : 'WebGL2'} · ${started.inWorker ? 'worker' : 'page thread'} · ${started.renderer}`,
 			`${displayHz} Hz display · ${cls} · pixel ratio ${size.pixelRatio}`,
 		];
 		if (last) {
@@ -227,6 +237,8 @@ export async function startPage(): Promise<void> {
 				capacity: SCENES[scene].ramp[cls].max,
 				effects,
 				gpu,
+				crowd,
+				startSeconds: at,
 				width: size.width,
 				height: size.height,
 				pixelRatio: size.pixelRatio,
@@ -303,6 +315,7 @@ export async function startPage(): Promise<void> {
 			engine,
 			engineVersion: started.version,
 			gpu: started.gpu,
+			renderer: started.renderer,
 			inWorker: started.inWorker,
 			deviceClass: cls,
 			displayHz,
