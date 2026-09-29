@@ -156,3 +156,8 @@ main {
 		font-size: 11px;
 	}
 }
+
+/* A hold frame for the image check shows the scene alone. */
+.view.held .readout {
+	display: none;
+}

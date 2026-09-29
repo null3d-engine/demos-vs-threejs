@@ -115,6 +115,8 @@ export class ThreeRuntime {
 				inWorker: this.inWorker,
 			},
 		});
+		// A hold frame stays as the warm-up draw left it: no frame loop, no figures.
+		if (options.hold) return;
 		this.statsTimer = setInterval(() => {
 			if (!this.paused)
 				this.post({ type: 'stats', measurement: this.summarize(performance.now() - STATS_MS) });
@@ -229,7 +231,7 @@ export class ThreeRuntime {
 	}
 
 	setPaused(paused: boolean): void {
-		if (paused === this.paused || !this.renderer) return;
+		if (paused === this.paused || !this.renderer || this.options.hold) return;
 		this.paused = paused;
 		// A paused engine draws nothing; the first frame after a pause starts a fresh interval.
 		this.lastTime = -1;
@@ -243,6 +245,8 @@ export class ThreeRuntime {
 		this.drawer?.setSize(width, height, pixelRatio);
 		this.build.camera.aspect = width / height;
 		this.build.camera.updateProjectionMatrix();
+		// A hold frame is drawn again at the new size.
+		if (this.options.hold) this.drawer?.render();
 	}
 
 	stop(): void {
