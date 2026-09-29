@@ -1,6 +1,6 @@
 # Rules for people and agents working in this repository
 
-This repository holds demo scenes that compare null3d with three.js. The README states the rules of the comparison. This file holds the working rules.
+This repository holds demo scenes that compare null3D with three.js. The README states the rules of the comparison. This file holds the working rules.
 
 ## Where things are
 
@@ -10,7 +10,7 @@ This repository holds demo scenes that compare null3d with three.js. The README 
 | `src/shell/` | The demo page: scene picker, engine switch, count slider and auto-slide, readout |
 | `src/measure/` | Frame statistics that measure both engines the same way |
 | `src/threejs/` | The tuned three.js version of each scene, run in a worker |
-| `src/null3d/` | The null3d version of each scene |
+| `src/null3d/` | The null3D version of each scene |
 | `tools/` | Measuring, device and recording tools |
 | `public/_headers` | The isolation headers for Cloudflare Pages |
 
@@ -28,6 +28,7 @@ The README lists every command. Run `bun run check`, `bun run typecheck` and `bu
 6. Every visual effect is a switch in the scene options. An effect ships only when the image check passes on every GPU path.
 7. The readout shows only figures that both engines give in the same way.
 8. Never decide anything from GPU names or user agents. Decide from feature tests.
+9. Write the engine's name as null3D in text. Package names (`@null3d/engine`), paths, URLs and code identifiers stay lowercase.
 
 ## Commits
 
