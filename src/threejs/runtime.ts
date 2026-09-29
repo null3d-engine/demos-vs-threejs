@@ -8,6 +8,7 @@ import type { FromEngine, GpuPath, Measurement, StartOptions } from '../engine/p
 import { FrameSamples } from '../engine/samples';
 import { FixedClock } from '../scenes/common';
 import type { SceneId } from '../scenes/index';
+import { buildCity } from './city';
 import type { Builder, SceneBuild, Three } from './common';
 import { buildFactory } from './factory';
 
@@ -16,6 +17,7 @@ export const THREE_VERSION = '0.186.1';
 
 const BUILDERS: Partial<Record<SceneId, Builder>> = {
 	factory: buildFactory,
+	city: buildCity,
 };
 
 /** Scenes with a three.js version so far. */

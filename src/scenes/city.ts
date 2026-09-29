@@ -115,12 +115,12 @@ export function windowOf(
 	// Face 0 looks toward +Z, 1 toward +X, 2 toward -Z, 3 toward -X.
 	const nx = Math.sin(yaw);
 	const nz = Math.cos(yaw);
-	const offset = along * (span - 3);
+	const offset = along * (span - 5);
 	outPosition[0] = (buildingPosition[0] as number) + nx * (halfFace + 0.06) + nz * offset;
-	outPosition[1] = 2 + floor * (height - 4);
+	outPosition[1] = 2.5 + floor * (height - 5);
 	outPosition[2] = (buildingPosition[2] as number) + nz * (halfFace + 0.06) - nx * offset;
-	outSize[0] = 2.4;
-	outSize[1] = 1.5;
+	outSize[0] = 4;
+	outSize[1] = 2.5;
 	outSize[2] = 0.1;
 	outYaw[0] = yaw;
 	return Math.floor(hash01(CITY_SEED, block, 1003 + b * 16 + w * 3) * WINDOW_COLORS.length);
@@ -500,11 +500,11 @@ export function cityTriangles(blocks: number, meshes: Record<CityMesh, MeshData>
 }
 
 export const BUILDING_COLORS: readonly Hex[] = [
-	'#2a3040',
-	'#323848',
-	'#262b36',
-	'#3a3a44',
-	'#2e3544',
+	'#6a7896',
+	'#7a829c',
+	'#5f6b86',
+	'#86828f',
+	'#71809e',
 ];
 export const WINDOW_COLORS: readonly Hex[] = ['#ffd58a', '#ffe7b8', '#bfe3ff', '#ffc070'];
 export const CAR_COLORS: readonly Hex[] = ['#b8322d', '#e0e0e0', '#1f3f7a', '#262626', '#c7a23a'];
@@ -516,15 +516,16 @@ export const CITY_MATERIALS = {
 	lampHead: { color: '#fff2c4' as Hex, unlit: true },
 	car: { roughness: 0.35, metalness: 0.6 },
 	person: { color: '#8c8f99' as Hex, roughness: 0.9, metalness: 0 },
-	ground: { color: '#15181e' as Hex, roughness: 0.95, metalness: 0 },
+	ground: { color: '#3a3f4c' as Hex, roughness: 0.95, metalness: 0 },
 } as const;
 
 export const CITY_VIEW = {
 	background: '#05070d' as Hex,
-	camera: { fov: 60, near: 0.5, far: 4000 },
+	// The far plane ends just past the fog, so both engines skip what the fog hides.
+	camera: { fov: 60, near: 0.5, far: 1400 },
 	/** Moonlight: the direction the light travels. */
-	sun: { direction: [0.3, -1, 0.5] as const, color: '#9fb4ff' as Hex, intensity: 0.35 },
-	hemisphere: { sky: '#26304d' as Hex, ground: '#0b0c10' as Hex, intensity: 0.5 },
+	sun: { direction: [0.3, -1, 0.5] as const, color: '#9fb4ff' as Hex, intensity: 2 },
+	hemisphere: { sky: '#4a5c8f' as Hex, ground: '#1a1c24' as Hex, intensity: 3 },
 	/** Real lights over the middle crossings; the lamp heads are unlit shapes. */
 	pointLights: [
 		{ position: [26, 6, 26], color: '#ffd28a', intensity: 120, range: 45 },
@@ -545,8 +546,8 @@ export const CITY_VIEW = {
  */
 export const CITY_CAMERA: CameraLoop = {
 	seconds: 70,
-	positions: [-160, 5, 22, 0, 5, 22, 160, 9, 22, 240, 90, 160, 0, 180, 260, -240, 90, 160],
-	targets: [0, 4, 26, 160, 5, 26, 320, 12, 26, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+	positions: [-160, 6, 26, 0, 6, 26, 160, 10, 26, 240, 90, 160, 0, 180, 260, -240, 90, 160],
+	targets: [0, 6, 26, 160, 6, 26, 320, 12, 26, 0, 0, 0, 0, 0, 0, 0, 0, 0],
 };
 
 export const CITY_EFFECTS = ['fog', 'glow'] as const;
