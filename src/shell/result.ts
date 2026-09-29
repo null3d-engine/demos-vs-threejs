@@ -16,6 +16,8 @@ export interface BenchResult {
 	inWorker: boolean;
 	deviceClass: string;
 	displayHz: number;
+	/** The view's size in CSS pixels, and the device pixels drawn per CSS pixel. */
+	renderSize: { width: number; height: number; pixelRatio: number };
 	count: number;
 	effects: string;
 	crowd: string;

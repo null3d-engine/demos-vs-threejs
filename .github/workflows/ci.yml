@@ -53,12 +53,16 @@ jobs:
       - run: bun install --frozen-lockfile
       - run: bunx playwright install --with-deps chromium
       - run: bun run test:browser
+      # The device tool end to end: its runner page in Chromium on the software GPU.
+      - run: bun run devices -- --chromium --scenes factory --gpus webgl2 --runs 1 --seconds 2
       # Always kept: each scene test saves its last screenshot (view.png) for review.
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: playwright-results
-          path: test-results/
+          path: |
+            test-results/
+            runs/devices/
           retention-days: 14
 
   # The image check: three.js's WebGL2 and WebGPU hold frames of each scene, compared. Its report

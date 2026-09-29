@@ -20,7 +20,9 @@
 		"test:browser": "playwright test",
 		"assets": "bun tools/assets.ts",
 		"parity": "bun tools/parity.ts",
-		"bench": "bun tools/bench.ts"
+		"bench": "bun tools/bench.ts",
+		"devices": "bun tools/devices.ts",
+		"dev-cert": "bun tools/dev-cert.ts"
 	},
 	"dependencies": {
 		"three": "0.186.1"

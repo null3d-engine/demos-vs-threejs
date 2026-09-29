@@ -5,7 +5,7 @@
 
 import type { Measurement } from '../../src/engine/protocol';
 import { SCENES, type SceneId } from '../../src/scenes/index';
-import type { AutoResult, BenchResult } from '../../src/shell/result';
+import type { AutoResult, BenchResult, DemoResult } from '../../src/shell/result';
 import { THREE_SCENES } from '../../src/threejs/scenes';
 
 export type BenchGpu = 'webgpu' | 'webgl2';
@@ -281,14 +281,44 @@ const ms = (value: number | null) =>
 const whole = (value: number) =>
 	Number.isFinite(value) ? Math.round(value).toLocaleString('en-US') : 'n/a';
 
-/** The summary as Markdown text. */
+/** Sums up a plan's results page by page, and lists the runs that failed. */
+export function summarizePlan(
+	plan: readonly BenchItem[],
+	resultOf: (id: string) => DemoResult | undefined,
+): { pages: PageSummary[]; failed: string[] } {
+	const pages: PageSummary[] = [];
+	const failed: string[] = [];
+	for (const key of new Set(plan.map((item) => item.key))) {
+		const items = plan.filter((item) => item.key === key);
+		const measured = items
+			.filter((item) => !item.gpuTime)
+			.map((item) => resultOf(item.id))
+			.filter((result): result is BenchResult | AutoResult => result?.ok === true);
+		const gpuItem = items.find((item) => item.gpuTime);
+		const gpuResult = gpuItem ? resultOf(gpuItem.id) : undefined;
+		for (const item of items) {
+			const result = resultOf(item.id);
+			if (result && !result.ok) failed.push(`${item.id}: ${result.error}`);
+		}
+		const summary = summarizePage(
+			items[0] as BenchItem,
+			measured,
+			gpuResult?.ok && gpuResult.kind === 'bench' ? gpuResult : null,
+		);
+		if (summary) pages.push(summary);
+	}
+	return { pages, failed };
+}
+
+/** The summary as Markdown text, under a title. */
 export function benchReport(
 	pages: readonly PageSummary[],
 	options: BenchOptions,
 	failed: readonly string[],
+	title = 'three.js benchmark',
 ): string {
 	const lines = [
-		'# three.js benchmark',
+		`# ${title}`,
 		'',
 		`GPU: ${options.gpu}. Runs per page: ${options.runs}, each a 5 s warm-up then ${options.auto ? 'the auto-slide' : `${options.seconds} s measured`}. Figures are the median of the runs' medians.`,
 		'',

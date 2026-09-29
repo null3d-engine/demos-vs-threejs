@@ -16,3 +16,4 @@ runs/
 *.log
 assets/sources/
 parity-results/
+certs/
