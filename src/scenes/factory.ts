@@ -35,7 +35,7 @@ export const CELL_PITCH = 6;
 export const CRATES_PER_CELL = 4;
 /** Arm parts that move (turntable, upper arm, forearm, wrist, two fingers) plus the crates. */
 export const MOVING_PER_CELL = 6 + CRATES_PER_CELL;
-/** Parts that stand still: arm base, belt, pallet and ceiling lamp. */
+/** Parts that stand still: arm base, belt, pallet and a glowing floor line. */
 export const STILL_PER_CELL = 4;
 /** The hall floor. */
 export const HALL_OBJECTS = 1;
@@ -67,12 +67,12 @@ export const ARM_PARTS = 7;
 /** The parent of each part, or -1 for the base, whose parent is the hall. */
 export const ARM_PARENT: readonly number[] = [-1, 0, 1, 2, 3, 4, 4];
 
-const BASE_HEIGHT = 0.4;
-const TURNTABLE_HEIGHT = 0.3;
-const UPPER_LENGTH = 1.6;
-const FORE_LENGTH = 1.4;
-const WRIST_LENGTH = 0.3;
-const FINGER_LENGTH = 0.34;
+export const BASE_HEIGHT = 0.4;
+export const TURNTABLE_HEIGHT = 0.3;
+export const UPPER_LENGTH = 1.6;
+export const FORE_LENGTH = 1.4;
+export const WRIST_LENGTH = 0.3;
+export const FINGER_LENGTH = 0.34;
 /** The grip point, where a held crate's center is, along the wrist's +Y. */
 export const GRIP_POINT = 0.57;
 export const CRATE_SIZE = 0.5;
@@ -419,12 +419,13 @@ export function crateTransform(
 	return CrateParent.hall;
 }
 
-// Still parts of a cell, relative to the cell's origin: belt, pallet and lamp.
+// Still parts of a cell, relative to the cell's origin: belt, pallet and a glowing floor line
+// beyond the pallet.
 
 export const BELT_HEIGHT = CRATE_HEIGHT - CRATE_SIZE / 2;
-export const LAMP_HEIGHT = 6;
+const LINE_OFFSET = 1.1;
 
-/** Writes a still part's world position: 0 belt, 1 pallet, 2 lamp. */
+/** Writes a still part's world position: 0 belt, 1 pallet, 2 floor line. */
 export function stillPartPosition(
 	state: FactoryState,
 	cell: number,
@@ -441,8 +442,8 @@ export function stillPartPosition(
 		out[1] = BELT_HEIGHT / 2;
 		out[2] = oz + REACH;
 	} else {
-		out[1] = LAMP_HEIGHT;
-		out[2] = oz;
+		out[1] = 0.01;
+		out[2] = oz + REACH + LINE_OFFSET;
 	}
 }
 
@@ -467,7 +468,7 @@ export function factoryMeshes(capacity: number): Record<FactoryMesh, MeshData> {
 		crate: boxGeometry(CRATE_SIZE, CRATE_SIZE, CRATE_SIZE),
 		belt: boxGeometry(CELL_PITCH, BELT_HEIGHT, 0.7),
 		pallet: boxGeometry(1.0, BELT_HEIGHT, 1.0),
-		lamp: boxGeometry(1.4, 0.08, 0.4),
+		line: boxGeometry(CELL_PITCH * 0.8, 0.02, 0.12),
 		floor: translated(boxGeometry(floor, 0.2, floor), 0, -0.1, 0),
 	};
 }
@@ -482,7 +483,7 @@ export type FactoryMesh =
 	| 'crate'
 	| 'belt'
 	| 'pallet'
-	| 'lamp'
+	| 'line'
 	| 'floor';
 
 /** Triangles in the scene for a count of moving parts. */
@@ -500,11 +501,11 @@ export function factoryTriangles(
 		CRATES_PER_CELL * triangleCount(meshes.crate) +
 		triangleCount(meshes.belt) +
 		triangleCount(meshes.pallet) +
-		triangleCount(meshes.lamp);
+		triangleCount(meshes.line);
 	return factoryCells(movingParts) * perCell + triangleCount(meshes.floor);
 }
 
-/** Surface of each mesh. Lamps are unlit: they show their color as it is, like a light fitting. */
+/** Surface of each mesh. Floor lines are unlit: they show their color as it is, like a light. */
 export const FACTORY_MATERIALS: Readonly<
 	Record<FactoryMesh, { color: Hex; roughness: number; metalness: number; unlit?: boolean }>
 > = {
@@ -517,7 +518,7 @@ export const FACTORY_MATERIALS: Readonly<
 	crate: { color: '#b07a45', roughness: 0.85, metalness: 0 },
 	belt: { color: '#23262b', roughness: 0.9, metalness: 0.1 },
 	pallet: { color: '#6d5a3f', roughness: 0.9, metalness: 0 },
-	lamp: { color: '#fff4d6', roughness: 1, metalness: 0, unlit: true },
+	line: { color: '#ffcf6b', roughness: 1, metalness: 0, unlit: true },
 	floor: { color: '#5b6068', roughness: 0.95, metalness: 0 },
 };
 

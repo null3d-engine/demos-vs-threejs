@@ -41,6 +41,7 @@ Then open `http://localhost:5173/`. The dev server sends the two headers that ma
 | `bun run build` | Build the site into `dist/` |
 | `bun run preview` | Serve the build with the isolation headers |
 | `bun run test` | Unit tests |
+| `bun run test:browser` | Start each demo in Chromium with a software GPU, through Playwright |
 | `bun run check` | Lint and format check (Biome) |
 | `bun run check:fix` | Lint and format, fixing what Biome can |
 | `bun run typecheck` | TypeScript check |

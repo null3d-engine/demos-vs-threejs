@@ -3,14 +3,66 @@
 	<head>
 		<meta charset="utf-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1" />
-		<title>null3d vs three.js</title>
+		<title>null3D vs three.js</title>
+		<meta
+			name="description"
+			content="Three demo scenes drawn by null3D and by a tuned three.js, with the same look and a live speed comparison."
+		/>
+		<link rel="stylesheet" href="/src/shell/style.css" />
 	</head>
 	<body>
+		<header class="bar">
+			<h1>null3D vs three.js</h1>
+			<nav class="scenes" aria-label="Scene">
+				<button type="button" data-scene="factory">Factory</button>
+				<button type="button" data-scene="city">City</button>
+				<button type="button" data-scene="battle">Battle</button>
+			</nav>
+			<div class="choices">
+				<label
+					>Engine
+					<select id="engine">
+						<option value="threejs">three.js</option>
+						<option value="null3d" disabled>null3D (not on npm yet)</option>
+					</select>
+				</label>
+				<label
+					>GPU
+					<select id="gpu">
+						<option value="auto">Auto</option>
+						<option value="webgpu">WebGPU</option>
+						<option value="webgl2">WebGL2</option>
+					</select>
+				</label>
+			</div>
+		</header>
 		<main>
-			<h1>null3d vs three.js</h1>
-			<p>Three demo scenes, drawn by null3d and by a tuned three.js. The demos are in progress.</p>
-			<p id="status">Checking isolation</p>
+			<section class="stage" aria-label="Demo">
+				<div id="view" class="view" role="img" aria-label="The demo scene">
+					<pre id="readout" class="readout" aria-live="off"></pre>
+				</div>
+				<div class="controls">
+					<label for="count" id="count-label">Count</label>
+					<input id="count" type="range" min="0" max="1000" step="1" value="0" />
+					<output id="count-value" for="count"></output>
+					<button type="button" id="auto">Auto-slide</button>
+					<button type="button" id="pause" aria-pressed="false">Pause</button>
+					<button type="button" id="save" disabled>Save run</button>
+				</div>
+			</section>
+			<section class="results" aria-label="Results">
+				<canvas id="chart" role="img" aria-label="Median frame time against count"></canvas>
+				<div id="result" class="result" hidden></div>
+			</section>
+			<p id="status" class="status" role="status"></p>
 		</main>
+		<footer class="notes">
+			<p>
+				Both engines draw the same scene from one shared description, at the same size, on the
+				high-performance GPU. three.js 0.186.1 runs in one worker, tuned with its own add-ons and
+				the methods of its official examples. One engine runs at a time.
+			</p>
+		</footer>
 		<script type="module" src="/src/main.ts"></script>
 	</body>
 </html>

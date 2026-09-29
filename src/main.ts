@@ -1,9 +1,7 @@
-import { isolationProblem } from './shell/isolation';
+import { startPage } from './shell/page';
 
-const problem = isolationProblem({
-	crossOriginIsolated: globalThis.crossOriginIsolated,
-	sharedMemory: typeof SharedArrayBuffer !== 'undefined',
+startPage().catch((error: unknown) => {
+	const status = document.getElementById('status');
+	if (status)
+		status.textContent = `The demo could not start: ${error instanceof Error ? error.message : String(error)}`;
 });
-const status = document.getElementById('status');
-if (status)
-	status.textContent = problem ?? 'This page is cross-origin isolated: worker threads can run.';
