@@ -186,6 +186,16 @@ test('the hold option draws one still frame with no readout', async ({ page }) =
 	expect(errors).toEqual([]);
 });
 
+test('the full option fills the window with the scene, for recordings', async ({ page }) => {
+	const errors = watchErrors(page);
+	await page.setViewportSize({ width: 960, height: 540 });
+	await page.goto('/?scene=factory&gpu=webgl2&count=2000&at=6&hold=1&full=1');
+	await expect(page.locator('#view[data-held="true"]')).toBeVisible({ timeout: 60_000 });
+	const png = decode(await page.locator('#view canvas').screenshot());
+	expect([png.width, png.height]).toEqual([960, 540]);
+	expect(errors).toEqual([]);
+});
+
 test('the bench option measures after a warm-up and hands the figures to the tools', async ({
 	page,
 }) => {
