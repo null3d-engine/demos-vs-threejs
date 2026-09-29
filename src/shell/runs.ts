@@ -29,8 +29,11 @@ export interface RunFile {
 	heldAtDisplayRate: number;
 	heldAtHalfRate: number;
 	stopReason: StopReason | null;
-	/** Memory readings of the page and its workers, with the ramp second they arrived at. */
-	memory: { second: number; bytes: number }[];
+	/**
+	 * Memory readings of the page and its workers, with the ramp second they arrived at: shared
+	 * memory counted once, and what the browser reported.
+	 */
+	memory: { second: number; bytes: number; measuredBytes: number }[];
 	/** Recorded for reference only; nothing is decided from it. */
 	userAgent: string;
 }

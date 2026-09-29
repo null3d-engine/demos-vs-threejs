@@ -126,7 +126,7 @@ export async function startPage(): Promise<void> {
 	let offScreen = false;
 	let last: Measurement | null = null;
 	const memory = new MemoryReader();
-	const memoryLog: { second: number; bytes: number }[] = [];
+	const memoryLog: RunFile['memory'] = [];
 	let rampStartedAt = 0;
 
 	const range = () => countRange(SCENES[scene].ramp[cls]);
@@ -179,7 +179,7 @@ export async function startPage(): Promise<void> {
 		const reading = memory.last;
 		lines.push(
 			reading
-				? `Memory ${formatMegabytes(reading.bytes)}, ${Math.round((performance.now() - reading.at) / 1000)} s ago`
+				? `Memory ${formatMegabytes(reading.bytes)}${reading.bytes === reading.measuredBytes ? '' : ` (shared memory counted once; the browser reports ${formatMegabytes(reading.measuredBytes)})`}, ${Math.round((performance.now() - reading.at) / 1000)} s ago`
 				: 'Memory: not available in this browser',
 		);
 		if (ramping) lines.push(`Auto-slide: second ${Math.max(0, rampSecond)}`);
@@ -284,7 +284,10 @@ export async function startPage(): Promise<void> {
 			status.textContent = 'Hold frame: the scene stands still for the image check.';
 			return;
 		}
-		memory.start(() => writeReadout());
+		memory.start(
+			() => writeReadout(),
+			() => adapter?.sharedMemory() ?? null,
+		);
 		status.textContent = [
 			problem,
 			reducedMotion
@@ -366,7 +369,11 @@ export async function startPage(): Promise<void> {
 				memory.last &&
 				(memoryLog.length === 0 || memoryLog[memoryLog.length - 1]?.bytes !== memory.last.bytes)
 			) {
-				memoryLog.push({ second: rampSecond, bytes: memory.last.bytes });
+				memoryLog.push({
+					second: rampSecond,
+					bytes: memory.last.bytes,
+					measuredBytes: memory.last.measuredBytes,
+				});
 			}
 			const stop = tracker.add({
 				step,

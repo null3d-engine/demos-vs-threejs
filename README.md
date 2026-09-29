@@ -20,7 +20,8 @@ Status: in progress. The three.js versions come first. The null3D versions follo
 4. The three.js version uses three.js 0.186.1, its add-ons and the methods of its official examples, plus normal game code. It runs in one worker with an OffscreenCanvas. It uses the faster of its two renderers on each device.
 5. Every effect is a switch. An effect is on only when both engines draw it the same way, as an image check shows.
 6. One engine runs at a time.
-7. The run files and the three.js code are public. If you can make the three.js version faster within these rules, open a pull request.
+7. Memory is the browser's figure for the page and all its workers (`performance.measureUserAgentSpecificMemory`, Chromium only), the same call for both engines. That call counts shared memory once for each thread that holds it: in Chromium 141, one 256 MB shared WebAssembly memory held by the page and two workers reads as 768 MB. null3D shares its memory with its helper threads, so the demo takes the extra copies off and shows the browser's own figure beside it. three.js runs in one worker and shares nothing, so its figure is the browser's.
+8. The run files and the three.js code are public. If you can make the three.js version faster within these rules, open a pull request.
 
 ## Run the demos
 

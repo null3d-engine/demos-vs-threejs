@@ -110,6 +110,11 @@ export class ThreeAdapter implements EngineAdapter {
 		this.statsHandler = handler;
 	}
 
+	/** three.js runs in one worker and shares no memory with the page. */
+	sharedMemory(): null {
+		return null;
+	}
+
 	setPaused(paused: boolean): void {
 		if (this.runtime) this.runtime.setPaused(paused);
 		else this.send({ type: 'pause', paused });
