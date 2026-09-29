@@ -33,6 +33,18 @@ bun run dev
 
 Then open `http://localhost:5173/`. The dev server sends the two headers that make the page cross-origin isolated, which worker threads need.
 
+### Page options
+
+Add these to the page address, for example `/?scene=city&gpu=webgl2&count=500`.
+
+| Option | Values | Default |
+| --- | --- | --- |
+| `scene` | `factory`, `city`, `battle` | `factory` |
+| `engine` | `threejs` | `threejs` |
+| `gpu` | `auto`, `webgpu`, `webgl2` | `auto`: WebGPU where it works, else WebGL2 |
+| `effects` | Effect names, separated by commas: `shadows`, `fog`, `glow` | The scene's effects |
+| `count` | The count to start with. The page keeps it inside the slider's range. | The auto-slide's start count |
+
 ## Commands
 
 | Command | Use |

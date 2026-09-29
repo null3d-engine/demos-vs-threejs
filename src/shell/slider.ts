@@ -17,6 +17,28 @@ export function countToSlider(count: number, min: number, max: number): number {
 	);
 }
 
+/** The part of a ramp plan that sets the slider's range. */
+export interface CountPlan {
+	readonly start: number;
+	readonly max: number;
+}
+
+/** The slider's range: a tenth of the ramp's start count up to its maximum. */
+export function countRange(plan: CountPlan): { min: number; max: number } {
+	return { min: Math.max(1, Math.round(plan.start / 10)), max: plan.max };
+}
+
+/**
+ * The count a scene starts with: the page address's `count` option when it is a whole number, kept
+ * inside the slider's range; else the ramp's start count.
+ */
+export function startCount(option: string | null, plan: CountPlan): number {
+	const asked = option === null || option.trim() === '' ? Number.NaN : Number(option);
+	if (!Number.isInteger(asked)) return plan.start;
+	const { min, max } = countRange(plan);
+	return Math.min(max, Math.max(min, asked));
+}
+
 /** Groups a whole number's digits: 61917 becomes "61,917". */
 export function formatCount(value: number): string {
 	return Math.round(value).toLocaleString('en-US');

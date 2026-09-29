@@ -22,7 +22,15 @@ import {
 	type StopReason,
 } from './ramp';
 import { downloadRun, keepRun, keptRun, type RunFile } from './runs';
-import { countToSlider, formatCount, formatMegabytes, formatShort, sliderToCount } from './slider';
+import {
+	countRange,
+	countToSlider,
+	formatCount,
+	formatMegabytes,
+	formatShort,
+	sliderToCount,
+	startCount,
+} from './slider';
 
 const STOP_TEXT: Readonly<Record<StopReason, string>> = {
 	'below-display-rate': 'it stayed below the display rate for 3 seconds after second 20',
@@ -83,7 +91,7 @@ export async function startPage(): Promise<void> {
 
 	let adapter: EngineAdapter | null = null;
 	let started: Started | null = null;
-	let count = SCENES[scene].ramp[cls].start;
+	let count = startCount(params.get('count'), SCENES[scene].ramp[cls]);
 	let ramping = false;
 	let rampSecond = -1;
 	let tracker: RampTracker | null = null;
@@ -95,10 +103,7 @@ export async function startPage(): Promise<void> {
 	const memoryLog: { second: number; bytes: number }[] = [];
 	let rampStartedAt = 0;
 
-	const range = () => {
-		const plan = SCENES[scene].ramp[cls];
-		return { min: Math.max(1, Math.round(plan.start / 10)), max: plan.max };
-	};
+	const range = () => countRange(SCENES[scene].ramp[cls]);
 
 	const renderSize = () => {
 		const pixelRatio = renderPixelRatio(cls, window.devicePixelRatio);
@@ -346,6 +351,7 @@ export async function startPage(): Promise<void> {
 			count = SCENES[scene].ramp[cls].start;
 			effects = effectsOf(SCENES[scene].effects);
 			params.set('scene', scene);
+			params.delete('count');
 			history.replaceState(null, '', `?${params}`);
 			void startEngine();
 		});

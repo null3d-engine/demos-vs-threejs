@@ -507,14 +507,16 @@ export const BUILDING_COLORS: readonly Hex[] = [
 	'#71809e',
 ];
 export const WINDOW_COLORS: readonly Hex[] = ['#ffd58a', '#ffe7b8', '#bfe3ff', '#ffc070'];
-export const CAR_COLORS: readonly Hex[] = ['#b8322d', '#e0e0e0', '#1f3f7a', '#262626', '#c7a23a'];
+/** Light paints: under the blue moonlight, dark paints show black. */
+export const CAR_COLORS: readonly Hex[] = ['#ff6a5c', '#f0f0f0', '#8fb8ff', '#b9c2cc', '#ffd65c'];
 
 export const CITY_MATERIALS = {
 	building: { roughness: 0.85, metalness: 0.1 },
 	window: { unlit: true },
 	lampPole: { color: '#454b55' as Hex, roughness: 0.6, metalness: 0.6 },
 	lampHead: { color: '#fff2c4' as Hex, unlit: true },
-	car: { roughness: 0.35, metalness: 0.6 },
+	// Little metal: with no surroundings to reflect, metal paint shows almost black.
+	car: { roughness: 0.45, metalness: 0.15 },
 	person: { color: '#8c8f99' as Hex, roughness: 0.9, metalness: 0 },
 	ground: { color: '#3a3f4c' as Hex, roughness: 0.95, metalness: 0 },
 } as const;
@@ -542,12 +544,19 @@ export const CITY_VIEW = {
 
 /**
  * The camera flies along an avenue at street level, climbs over the roofs, circles and comes back
- * down, once every 70 seconds.
+ * down, once every 70 seconds. The curve through the points overshoots where the path turns, so
+ * the path climbs and comes down along the avenue and turns only high above the roofs.
  */
 export const CITY_CAMERA: CameraLoop = {
 	seconds: 70,
-	positions: [-160, 6, 26, 0, 6, 26, 160, 10, 26, 240, 90, 160, 0, 180, 260, -240, 90, 160],
-	targets: [0, 6, 26, 160, 6, 26, 320, 12, 26, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+	positions: [
+		-260, 6, 26, -130, 6, 26, 0, 6, 26, 130, 8, 26, 240, 40, 26, 320, 160, 26, 200, 190, 280, -200,
+		190, 280, -400, 150, 26, -380, 28, 26,
+	],
+	targets: [
+		-100, 6, 26, 30, 6, 26, 160, 6, 26, 290, 12, 26, 360, 60, 26, 0, 0, 0, 0, 0, 0, 0, 0, 0, -200,
+		0, 26, -200, 4, 26,
+	],
 };
 
 export const CITY_EFFECTS = ['fog', 'glow'] as const;
