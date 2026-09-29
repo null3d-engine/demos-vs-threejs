@@ -129,6 +129,29 @@ for (const { scene, background, count, exactObjects } of SCENE_CHECKS) {
 	});
 }
 
+// Every scene has the glow on by default; these draw a scene the plain way, straight to the canvas.
+for (const gpu of ['webgl2', 'webgpu'] as const) {
+	test(`without the glow, the factory draws straight to the canvas on ${gpu}`, async ({
+		page,
+	}, testInfo) => {
+		const errors = watchErrors(page);
+		await page.goto(`/?scene=factory&gpu=${gpu}&effects=shadows,fog`);
+		const started = readout(page).filter({ hasText: 'Draw calls' });
+		const failed = page.locator('#status', { hasText: 'could not start' });
+		await expect(started.or(failed)).toBeVisible({ timeout: 60_000 });
+		const status = (await page.locator('#status').textContent()) ?? '';
+		test.skip(
+			status.includes("'swizzle'"),
+			'This Chromium refuses the texture swizzle setting of three.js 0.186.',
+		);
+		await expect(readout(page)).toContainText(
+			gpu === 'webgpu' ? 'WebGPU · worker' : 'WebGL2 · worker',
+		);
+		await expectDrawn(page, [0x0e, 0x11, 0x16], testInfo);
+		expect(errors).toEqual([]);
+	});
+}
+
 for (const [crowd, renderer] of [
 	['draw', 'WebGPURenderer, WebGL2 mode'],
 	['skinned', 'WebGLRenderer'],

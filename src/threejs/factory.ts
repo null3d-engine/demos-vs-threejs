@@ -189,5 +189,6 @@ export const buildFactory: Builder = (three, options) => {
 		pose,
 		objects: () => factoryObjects(cells * MOVING_PER_CELL),
 		triangles: () => factoryTriangles(cells * MOVING_PER_CELL, meshes),
+		glow: FACTORY_VIEW.glow,
 	};
 };

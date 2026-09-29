@@ -7,6 +7,20 @@ export const EFFECT_NAMES: readonly EffectName[] = ['shadows', 'fog', 'glow'];
 
 export type Effects = Record<EffectName, boolean>;
 
+/**
+ * The glow: light brighter than `threshold` spreads over its surroundings, as a bloom pass does
+ * (three.js's UnrealBloomPass and its WebGPU port, the bloom node). Brightness is linear, before
+ * tone mapping, so only light materials, which shine above 1, glow; lit surfaces stay below.
+ */
+export interface GlowSpec {
+	/** The brightness above which light glows. */
+	readonly threshold: number;
+	/** How much glow is added. */
+	readonly strength: number;
+	/** How far the glow spreads, from 0 to 1. */
+	readonly radius: number;
+}
+
 /** Effects that are all off. */
 export function noEffects(): Effects {
 	return { shadows: false, fog: false, glow: false };

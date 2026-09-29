@@ -680,9 +680,10 @@ export const BATTLE_MATERIALS = {
 	/** Soldiers and mechs: the colors come from the model files, times the army's tint. */
 	unit: { roughness: 0.8, metalness: 0 },
 	tank: { roughness: 0.7, metalness: 0.3 },
-	tracer: { color: '#ffe08a' as Hex, unlit: true },
+	/** Tracers and blasts shine: their color times their intensity. */
+	tracer: { color: '#ffe08a' as Hex, unlit: true, intensity: 4 },
 	shell: { color: '#303030' as Hex, roughness: 0.5, metalness: 0.7 },
-	blast: { color: '#ff9a3c' as Hex, unlit: true },
+	blast: { color: '#ff9a3c' as Hex, unlit: true, intensity: 4 },
 	ground: { color: '#6f7d55' as Hex, roughness: 1, metalness: 0 },
 } as const;
 
@@ -693,6 +694,7 @@ export const BATTLE_VIEW = {
 	hemisphere: { sky: '#cfe0ff' as Hex, ground: '#5a4d38' as Hex, intensity: 0.7 },
 	pointLights: [] as const,
 	fog: { color: '#a9b8c9' as Hex, near: 150, far: 900 },
+	glow: { threshold: 1.2, strength: 0.4, radius: 0.1 },
 } as const;
 
 /** The camera circles the middle of the field every 90 seconds, high enough to see both lines. */
