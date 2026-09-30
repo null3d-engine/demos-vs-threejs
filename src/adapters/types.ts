@@ -2,6 +2,7 @@
 // measures and stops them all alike.
 
 import type { EngineKind, Measurement, Started, StartOptions } from '../engine/protocol';
+import type { SharedMemory } from '../shell/memory';
 
 export interface EngineAdapter {
 	readonly kind: EngineKind;
@@ -15,6 +16,11 @@ export interface EngineAdapter {
 	measure(milliseconds: number): Promise<Measurement>;
 	/** Live figures, a few times a second. */
 	onStats(handler: (measurement: Measurement) => void): void;
+	/**
+	 * Memory the engine shares between its threads now, or null when it shares none. The browser's
+	 * memory call counts shared memory once per thread that holds it; the page counts it once.
+	 */
+	sharedMemory(): SharedMemory | null;
 	setPaused(paused: boolean): void;
 	resize(width: number, height: number, pixelRatio: number): void;
 	stop(): void;
