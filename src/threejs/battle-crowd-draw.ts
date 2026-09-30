@@ -94,10 +94,27 @@ export interface DrawCrowdOptions {
 	shadows: boolean;
 }
 
+/**
+ * Units per chunk in texture mode. The WebGPU renderer's WebGL2 mode uploads a whole texture when
+ * it changes, so the tables are split into chunks with their own textures and draw, and only the
+ * chunks with units in use are uploaded: the upload follows the count, not the most units.
+ */
+const TEXTURE_CHUNK_UNITS = 2048;
+
+/** A run of unit slots with its own tables and draw. */
+interface Chunk {
+	first: number;
+	size: number;
+	bones: Vec4Table;
+	units: Vec4Table;
+	mesh: WebGPU.Mesh;
+}
+
 export class DrawCrowd {
-	readonly mesh: WebGPU.Mesh;
-	private readonly bones: Vec4Table;
-	private readonly units: Vec4Table;
+	/** The crowd's draws: one on WebGPU, one per chunk in texture mode. */
+	readonly object: WebGPU.Group;
+	private readonly chunks: Chunk[] = [];
+	private readonly chunkSize: number;
 	private readonly boneFloats: number;
 	private readonly frame: ThreeModule.Matrix4;
 	private readonly place: ThreeModule.Matrix4;
@@ -112,30 +129,46 @@ export class DrawCrowd {
 		options: DrawCrowdOptions,
 	) {
 		const { capacity } = options;
-		const boneCount = poser.boneCount;
-		this.boneFloats = boneCount * 16;
+		this.boneFloats = poser.boneCount * 16;
 		this.scale = scale;
-		this.bones = new Vec4Table(webgpu, tsl, capacity * boneCount * 4, options.textures);
-		this.units = new Vec4Table(webgpu, tsl, capacity * 5, options.textures);
-		const unitData = this.units.data;
-		for (let slot = 0; slot < capacity; slot++) {
-			unitData[slot * 20 + 16] = options.tints[slot * 3] ?? 1;
-			unitData[slot * 20 + 17] = options.tints[slot * 3 + 1] ?? 1;
-			unitData[slot * 20 + 18] = options.tints[slot * 3 + 2] ?? 1;
-			unitData[slot * 20 + 19] = 1;
-		}
-		this.units.upload(capacity * 5);
-
 		// The model's points in its bind pose: bone matrices then carry them to the posed model.
 		const geometry = poser.mesh.geometry.clone();
 		geometry.applyMatrix4(poser.mesh.bindMatrix);
 		this.frame = poser.meshFrame.clone();
 		this.place = new webgpu.Matrix4();
 		this.world = new webgpu.Matrix4();
+		this.object = new webgpu.Group();
+		this.chunkSize = options.textures ? TEXTURE_CHUNK_UNITS : capacity;
+		for (let first = 0; first < capacity; first += this.chunkSize) {
+			const size = Math.min(this.chunkSize, capacity - first);
+			const chunk = this.makeChunk(webgpu, tsl, geometry, first, size, options);
+			this.chunks.push(chunk);
+			this.object.add(chunk.mesh);
+		}
+	}
+
+	private makeChunk(
+		webgpu: WebGPUModule,
+		tsl: TSLModule,
+		geometry: ThreeModule.BufferGeometry,
+		first: number,
+		size: number,
+		options: DrawCrowdOptions,
+	): Chunk {
+		const boneCount = this.poser.boneCount;
+		const bones = new Vec4Table(webgpu, tsl, size * boneCount * 4, options.textures);
+		const units = new Vec4Table(webgpu, tsl, size * 5, options.textures);
+		const unitData = units.data;
+		for (let local = 0; local < size; local++) {
+			const slot = first + local;
+			unitData[local * 20 + 16] = options.tints[slot * 3] ?? 1;
+			unitData[local * 20 + 17] = options.tints[slot * 3 + 1] ?? 1;
+			unitData[local * 20 + 18] = options.tints[slot * 3 + 2] ?? 1;
+			unitData[local * 20 + 19] = 1;
+		}
+		units.upload(size * 5);
 
 		const { Fn, attribute, instanceIndex, uint, mat4, mat3, vec4, add, normalLocal } = tsl;
-		const bones = this.bones;
-		const units = this.units;
 		const unitMatrix = (unit: UintNode) => {
 			const at = unit.mul(uint(5));
 			return mat4(
@@ -176,31 +209,37 @@ export class DrawCrowd {
 			return toWorld.mul(vec4(attribute('position', 'vec3'), 1)).xyz;
 		})();
 		material.colorNode = units.read(instanceIndex.mul(uint(5)).add(uint(4)));
-		this.mesh = new webgpu.Mesh(geometry, material);
-		this.mesh.frustumCulled = false;
-		this.mesh.castShadow = options.shadows;
-		this.mesh.receiveShadow = options.shadows;
-		this.mesh.count = 0;
-		this.mesh.visible = false;
+		const mesh = new webgpu.Mesh(geometry, material);
+		mesh.frustumCulled = false;
+		mesh.castShadow = options.shadows;
+		mesh.receiveShadow = options.shadows;
+		mesh.count = 0;
+		mesh.visible = false;
+		return { first, size, bones, units, mesh };
 	}
 
 	/** Writes slot `slot` from the poser's current pose, standing at (x, z) and facing `heading`. */
 	write(slot: number, x: number, z: number, heading: number): void {
-		this.bones.data.set(this.poser.skeleton.boneMatrices as Float32Array, slot * this.boneFloats);
+		const chunk = this.chunks[Math.floor(slot / this.chunkSize)] as Chunk;
+		const local = slot - chunk.first;
+		chunk.bones.data.set(this.poser.skeleton.boneMatrices as Float32Array, local * this.boneFloats);
 		const c = Math.cos(heading) * this.scale;
 		const s = Math.sin(heading) * this.scale;
 		// Turn about +Y by the heading, scale to the unit's height, stand at (x, 0, z).
 		this.place.set(c, 0, s, x, 0, this.scale, 0, 0, -s, 0, c, z, 0, 0, 0, 1);
 		this.world.multiplyMatrices(this.place, this.frame);
-		this.world.toArray(this.units.data, slot * 20);
+		this.world.toArray(chunk.units.data, local * 20);
 	}
 
-	/** Draws the first `count` slots, and sends their data to the GPU. */
+	/** Draws the first `count` slots, and sends only their chunks' data to the GPU. */
 	show(count: number): void {
-		this.mesh.count = count;
-		this.mesh.visible = count > 0;
-		if (count === 0) return;
-		this.bones.upload(count * this.poser.boneCount * 4);
-		this.units.upload(count * 5);
+		for (const chunk of this.chunks) {
+			const used = Math.max(0, Math.min(chunk.size, count - chunk.first));
+			chunk.mesh.count = used;
+			chunk.mesh.visible = used > 0;
+			if (used === 0) continue;
+			chunk.bones.upload(used * this.poser.boneCount * 4);
+			chunk.units.upload(used * 5);
+		}
 	}
 }

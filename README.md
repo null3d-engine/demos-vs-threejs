@@ -71,6 +71,20 @@ Add these to the page address, for example `/?scene=city&gpu=webgl2&count=500`.
 | `bun run record` | A run of hold frames of each scene, one page load per frame at a later scene time, saved as PNG files for a video and joined into a GIF; files go to `runs/record` (`--help` for options) |
 | `bun run assets` | Make the battle's models in `assets/models/` from the source files listed in `assets/source.json` |
 
+## Publish
+
+The `Deploy` workflow builds the demos and publishes them on Cloudflare Pages: `main` to the production site, each pull request to a preview address. `public/_headers` sends the two cross-origin isolation headers there.
+
+It needs, in the repository settings:
+
+| Setting | Kind | Value |
+| --- | --- | --- |
+| `CLOUDFLARE_API_TOKEN` | Secret | A Cloudflare API token with the Cloudflare Pages: Edit permission |
+| `CLOUDFLARE_ACCOUNT_ID` | Secret | The Cloudflare account ID |
+| `CLOUDFLARE_PAGES_PROJECT` | Variable (optional) | The Pages project name; default `null3d-vs-threejs` |
+
+Make the project once with `bunx wrangler pages project create null3d-vs-threejs --production-branch main`. Without the secrets, the workflow only says so and passes.
+
 ## Phones and tablets
 
 `bun run devices` builds the site and serves it with a runner page. The runner page opens each
