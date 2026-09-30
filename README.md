@@ -46,6 +46,9 @@ Add these to the page address, for example `/?scene=city&gpu=webgl2&count=500`.
 | `count` | The count to start with. The page keeps it inside the slider's range. | The auto-slide's start count |
 | `at` | Simulation seconds to run before the first frame, from 0 to 600, to start the scene at a set moment | `0` |
 | `hold` | Draw one frame at `at` and keep it, with no readout: the hold frame of the image check | Off |
+| `bench` | Measure for this many seconds (default 30) after a 5 s warm-up, and hand the figures to `bun run bench` | Off |
+| `auto` | Start the auto-slide after a 5 s warm-up, and hand its run file to `bun run bench` | Off |
+| `gputime` | Measure GPU time with timestamp queries (the WebGPU renderer only). The queries cost time, so GPU time comes from runs of its own | Off |
 | `crowd` | How three.js draws the battle's soldiers on WebGL2: `draw` (one draw per model, in the WebGPU renderer's WebGL2 mode) or `skinned` (one skinned model per soldier, in the WebGL renderer). WebGPU always uses `draw`. | `draw` |
 
 ## Commands
@@ -60,6 +63,7 @@ Add these to the page address, for example `/?scene=city&gpu=webgl2&count=500`.
 | `bun run check` | Lint and format check (Biome) |
 | `bun run check:fix` | Lint and format, fixing what Biome can |
 | `bun run typecheck` | TypeScript check |
+| `bun run bench` | The benchmark: each scene with three.js at fixed counts (or `--auto`), five fresh-tab runs of 5 s warm-up and 30 s measured, in Google Chrome on this machine's GPU; run files and a summary go to `runs/bench` (`--help` for options) |
 | `bun run parity` | The image check: each scene's hold frame drawn by three.js on WebGL2 and on WebGPU, compared with three.js's image rule; frames, diffs and a report go to `runs/parity` (`--help` for options) |
 | `bun run assets` | Make the battle's models in `assets/models/` from the source files listed in `assets/source.json` |
 

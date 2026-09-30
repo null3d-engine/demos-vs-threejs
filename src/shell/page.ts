@@ -28,6 +28,7 @@ import {
 	STOP_FPS,
 	type StopReason,
 } from './ramp';
+import { publishResult } from './result';
 import { downloadRun, keepRun, keptRun, type RunFile } from './runs';
 import {
 	countRange,
@@ -55,6 +56,11 @@ function element<T extends HTMLElement>(id: string): T {
 function pick<T extends string>(value: string | null, options: readonly T[], fallback: T): T {
 	return value !== null && (options as readonly string[]).includes(value) ? (value as T) : fallback;
 }
+
+/** Seconds a measuring run lets the scene settle first, as the engine's benchmark protocol does. */
+const WARMUP_SECONDS = 5;
+/** Seconds a fixed-count measurement lasts when `?bench` names none. */
+const BENCH_SECONDS = 30;
 
 function sleepUntil(time: number): Promise<void> {
 	return new Promise((resolve) => setTimeout(resolve, Math.max(0, time - performance.now())));
@@ -86,6 +92,11 @@ export async function startPage(): Promise<void> {
 	// The image check's hold frame: one frame at `at`, kept still, with no readout over it.
 	const hold = params.has('hold');
 	view.classList.toggle('held', hold);
+	// Measuring runs for tools/bench.ts: GPU time from timestamp queries, one fixed-count
+	// measurement, or a whole auto-slide. Each hands its result over with publishResult.
+	const gpuTime = params.has('gputime');
+	const benchSeconds = params.has('bench') ? Number(params.get('bench')) || BENCH_SECONDS : null;
+	const autoRun = params.has('auto');
 	const effectsParam = params.get('effects');
 	let effects: Effects =
 		effectsParam === null ? effectsOf(SCENES[scene].effects) : effectsFromText(effectsParam);
@@ -152,6 +163,12 @@ export async function startPage(): Promise<void> {
 			lines.push(
 				`${last.fps.toFixed(1)} fps · frame ${last.frameMsMedian.toFixed(1)} ms (95th ${last.frameMsP95.toFixed(1)})`,
 				`CPU ${last.cpuMsMedian.toFixed(2)} ms per frame (95th ${last.cpuMsP95.toFixed(2)})`,
+				`Scene logic ${last.logicMsMedian.toFixed(2)} ms · engine ${Math.max(0, last.cpuMsMedian - last.logicMsMedian).toFixed(2)} ms`,
+				...(last.gpuMsMedian === null
+					? []
+					: [
+							`GPU ${last.gpuMsMedian.toFixed(2)} ms per frame (95th ${(last.gpuMsP95 ?? 0).toFixed(2)})`,
+						]),
 				`Draw calls ${formatCount(last.drawCalls)}`,
 				`${formatCount(last.count)} ${info.countUnit}`,
 				`Objects ${formatCount(last.objects)} · triangles ${formatShort(last.triangles)}`,
@@ -244,12 +261,14 @@ export async function startPage(): Promise<void> {
 				crowd,
 				startSeconds: at,
 				hold,
+				gpuTime,
 				width: size.width,
 				height: size.height,
 				pixelRatio: size.pixelRatio,
 			});
 		} catch (error) {
 			status.textContent = `${ENGINE_NAMES[engine]} could not start: ${error instanceof Error ? error.message : String(error)}`;
+			if (benchSeconds !== null || autoRun) publishResult({ ok: false, error: status.textContent });
 			return;
 		}
 		if (adapter !== next) return;
@@ -273,6 +292,44 @@ export async function startPage(): Promise<void> {
 			.filter(Boolean)
 			.join(' ');
 		applyPause();
+		if (benchSeconds !== null) void runBench(next, benchSeconds);
+		else if (autoRun) {
+			status.textContent = `Warming up for ${WARMUP_SECONDS} s, then the auto-slide starts.`;
+			await sleepUntil(performance.now() + WARMUP_SECONDS * 1000);
+			if (adapter === next) void runRamp();
+		}
+	};
+
+	/** One fixed-count measurement for tools/bench.ts, after a warm-up. */
+	const runBench = async (running: EngineAdapter, seconds: number) => {
+		userPaused = false;
+		applyPause();
+		status.textContent = `Warming up for ${WARMUP_SECONDS} s, then measuring for ${seconds} s.`;
+		await sleepUntil(performance.now() + WARMUP_SECONDS * 1000);
+		if (adapter !== running || !started) return;
+		const measurement = await running.measure(seconds * 1000);
+		if (adapter !== running || !started) return;
+		status.textContent = `Measured ${formatCount(measurement.frames)} frames.`;
+		publishResult({
+			ok: true,
+			kind: 'bench',
+			scene,
+			engine,
+			engineVersion: started.version,
+			gpu: started.gpu,
+			renderer: started.renderer,
+			inWorker: started.inWorker,
+			deviceClass: cls,
+			displayHz,
+			count,
+			effects: effectsToText(effects),
+			crowd,
+			gpuTime,
+			warmupSeconds: WARMUP_SECONDS,
+			seconds,
+			measurement,
+			userAgent: navigator.userAgent,
+		});
 	};
 
 	const runRamp = async () => {
@@ -315,6 +372,8 @@ export async function startPage(): Promise<void> {
 				frameMs: measured.frameMsMedian,
 				frameMsP95: measured.frameMsP95,
 				cpuMs: measured.cpuMsMedian,
+				logicMs: measured.logicMsMedian,
+				gpuMs: measured.gpuMsMedian,
 			});
 			redrawChart();
 			if (stop) break;
@@ -348,6 +407,7 @@ export async function startPage(): Promise<void> {
 			userAgent: navigator.userAgent,
 		};
 		keepRun(lastRun);
+		if (autoRun) publishResult({ ok: true, kind: 'auto', run: lastRun });
 		saveButton.disabled = false;
 		const unit = SCENES[scene].countUnit;
 		const lastStep = finished.steps[finished.steps.length - 1];

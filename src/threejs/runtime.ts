@@ -41,6 +41,7 @@ type AnyRenderer = THREE.WebGLRenderer & {
 	init?: () => Promise<unknown>;
 	backend?: { isWebGPUBackend?: boolean };
 	info: { autoReset: boolean; reset(): void; render: { calls?: number; drawCalls?: number } };
+	resolveTimestampsAsync?: (type?: string) => Promise<number | undefined>;
 };
 
 export class ThreeRuntime {
@@ -52,6 +53,8 @@ export class ThreeRuntime {
 	private lastTime = -1;
 	private paused = false;
 	private drawCalls = 0;
+	private gpuFrames = 0;
+	private gpuAsking = false;
 	private count: number;
 	private statsTimer: ReturnType<typeof setInterval> | null = null;
 
@@ -139,6 +142,7 @@ export class ThreeRuntime {
 					canvas: canvas as HTMLCanvasElement,
 					antialias: true,
 					powerPreference: 'high-performance',
+					trackTimestamp: options.gpuTime,
 				}) as unknown as AnyRenderer;
 				await renderer.init?.();
 				if (renderer.backend?.isWebGPUBackend)
@@ -166,6 +170,7 @@ export class ThreeRuntime {
 				context,
 				forceWebGL: true,
 				antialias: true,
+				trackTimestamp: options.gpuTime,
 			} as ConstructorParameters<typeof webgpu.WebGPURenderer>[0]) as unknown as AnyRenderer;
 			await renderer.init?.();
 			return {
@@ -192,23 +197,51 @@ export class ThreeRuntime {
 		this.lastTime = time;
 		const steps = this.clock.advance(interval / 1000);
 		for (let i = 0; i < steps; i++) build.step();
+		const logic = performance.now() - start;
 		build.pose(this.clock.time);
 		renderer.info.reset();
 		this.drawer?.render();
 		const info = renderer.info.render;
 		this.drawCalls = info.drawCalls ?? info.calls ?? 0;
-		if (interval > 0) this.samples.record(time, interval, performance.now() - start);
+		if (interval > 0) this.samples.record(time, interval, performance.now() - start, logic);
+		if (this.options.gpuTime) this.readGpuTime(renderer);
 	};
+
+	/**
+	 * Asks for the GPU time of the frames drawn since the last answer, one question at a time; the
+	 * answer covers all of them, so it is shared out per frame.
+	 */
+	private readGpuTime(renderer: AnyRenderer): void {
+		this.gpuFrames++;
+		if (this.gpuAsking || !renderer.resolveTimestampsAsync) return;
+		this.gpuAsking = true;
+		const frames = this.gpuFrames;
+		this.gpuFrames = 0;
+		renderer
+			.resolveTimestampsAsync('render')
+			.then((ms) => {
+				if (typeof ms === 'number' && ms > 0)
+					this.samples.recordGpu(performance.now(), ms / frames);
+			})
+			.catch(() => {})
+			.finally(() => {
+				this.gpuAsking = false;
+			});
+	}
 
 	private summarize(sinceMs: number): Measurement {
 		const summary = this.samples.summarize(sinceMs);
 		return {
 			frames: summary.frames,
 			fps: summary.fps,
-			frameMsMedian: summary.frameMs[0] as number,
-			frameMsP95: summary.frameMs[1] as number,
-			cpuMsMedian: summary.cpuMs[0] as number,
-			cpuMsP95: summary.cpuMs[1] as number,
+			frameMsMedian: summary.frameMs[0],
+			frameMsP95: summary.frameMs[1],
+			cpuMsMedian: summary.cpuMs[0],
+			cpuMsP95: summary.cpuMs[1],
+			logicMsMedian: summary.logicMs[0],
+			logicMsP95: summary.logicMs[1],
+			gpuMsMedian: summary.gpuMs?.[0] ?? null,
+			gpuMsP95: summary.gpuMs?.[1] ?? null,
 			drawCalls: this.drawCalls,
 			objects: this.build?.objects() ?? 0,
 			triangles: this.build?.triangles() ?? 0,
