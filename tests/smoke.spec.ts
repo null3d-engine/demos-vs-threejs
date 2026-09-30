@@ -24,7 +24,8 @@ function drawnShare(png: Buffer, background: [number, number, number]): number {
 
 /**
  * Waits until much of the view shows the scene, not the background. The last screenshot is kept
- * with the test's results, so a reviewer can look at each scene on each GPU path.
+ * with the test's results, so a reviewer can look at each scene on each GPU path. A screenshot
+ * waits for the next frame, and with the glow the software GPU can take most of a minute per frame.
  */
 async function expectDrawn(
 	page: Page,
@@ -38,7 +39,7 @@ async function expectDrawn(
 				last = await page.locator('#view').screenshot();
 				return drawnShare(last, background);
 			},
-			{ timeout: 60_000 },
+			{ timeout: 180_000 },
 		)
 		.toBeGreaterThan(0.3);
 	if (last) writeFileSync(testInfo.outputPath('view.png'), last);
@@ -200,11 +201,12 @@ test('the bench option measures after a warm-up and hands the figures to the too
 	page,
 }) => {
 	const errors = watchErrors(page);
-	await page.goto('/?scene=factory&gpu=webgl2&count=2000&bench=2');
+	// With the glow, one frame on the software GPU can take seconds, so the window holds several.
+	await page.goto('/?scene=factory&gpu=webgl2&count=2000&bench=10');
 	const handle = await page.waitForFunction(
 		() => (globalThis as { __demoResult?: unknown }).__demoResult,
 		undefined,
-		{ timeout: 60_000 },
+		{ timeout: 120_000 },
 	);
 	const result = (await handle.jsonValue()) as {
 		ok: boolean;
@@ -213,7 +215,7 @@ test('the bench option measures after a warm-up and hands the figures to the too
 		seconds: number;
 		measurement: { frames: number; cpuMsMedian: number; logicMsMedian: number; gpuMsMedian: null };
 	};
-	expect(result).toMatchObject({ ok: true, kind: 'bench', count: 2000, seconds: 2 });
+	expect(result).toMatchObject({ ok: true, kind: 'bench', count: 2000, seconds: 10 });
 	expect(result.measurement.frames).toBeGreaterThan(0);
 	expect(result.measurement.cpuMsMedian).toBeGreaterThan(result.measurement.logicMsMedian);
 	expect(result.measurement.gpuMsMedian).toBeNull();
