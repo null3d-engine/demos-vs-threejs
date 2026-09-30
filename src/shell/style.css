@@ -161,3 +161,18 @@ main {
 .view.held .readout {
 	display: none;
 }
+
+/* The `full` page option: the scene fills the window, over the rest of the page. */
+body.full {
+	overflow: hidden;
+}
+
+body.full .view {
+	position: fixed;
+	inset: 0;
+	z-index: 1;
+	width: auto;
+	max-height: none;
+	aspect-ratio: auto;
+	border-radius: 0;
+}

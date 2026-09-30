@@ -92,6 +92,8 @@ export async function startPage(): Promise<void> {
 	// The image check's hold frame: one frame at `at`, kept still, with no readout over it.
 	const hold = params.has('hold');
 	view.classList.toggle('held', hold);
+	// The scene fills the window, so a recording's frames are the window's size (tools/record.ts).
+	document.body.classList.toggle('full', params.has('full'));
 	// Measuring runs for tools/bench.ts: GPU time from timestamp queries, one fixed-count
 	// measurement, or a whole auto-slide. Each hands its result over with publishResult.
 	const gpuTime = params.has('gputime');

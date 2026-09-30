@@ -46,6 +46,7 @@ Add these to the page address, for example `/?scene=city&gpu=webgl2&count=500`.
 | `count` | The count to start with. The page keeps it inside the slider's range. | The auto-slide's start count |
 | `at` | Simulation seconds to run before the first frame, from 0 to 600, to start the scene at a set moment | `0` |
 | `hold` | Draw one frame at `at` and keep it, with no readout: the hold frame of the image check | Off |
+| `full` | The scene fills the window, over the controls, so a recording's frames are the window's size | Off |
 | `bench` | Measure for this many seconds (default 30) after a 5 s warm-up, and hand the figures to `bun run bench` | Off |
 | `auto` | Start the auto-slide after a 5 s warm-up, and hand its run file to `bun run bench` | Off |
 | `gputime` | Measure GPU time with timestamp queries (the WebGPU renderer only). The queries cost time, so GPU time comes from runs of its own | Off |
@@ -67,6 +68,7 @@ Add these to the page address, for example `/?scene=city&gpu=webgl2&count=500`.
 | `bun run parity` | The image check: each scene's hold frame drawn by three.js on WebGL2 and on WebGPU, compared with three.js's image rule; frames, diffs and a report go to `runs/parity` (`--help` for options) |
 | `bun run devices` | The same measurements, or a search for the largest count at which three.js holds the display rate (`--plan scale`), in browsers that Playwright cannot drive: apps on this Mac, browsers on an Android phone over USB, and tablets and phones on the local network; results go to `runs/devices` (`--help` for options) |
 | `bun run dev-cert` | Make the HTTPS certificate that tablets and phones on the local network need (uses mkcert) |
+| `bun run record` | A run of hold frames of each scene, one page load per frame at a later scene time, saved as PNG files for a video and joined into a GIF; files go to `runs/record` (`--help` for options) |
 | `bun run assets` | Make the battle's models in `assets/models/` from the source files listed in `assets/source.json` |
 
 ## Publish
