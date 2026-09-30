@@ -11,9 +11,8 @@ import {
 	type BenchOptions,
 	benchPlan,
 	benchReport,
-	type PageSummary,
 	parseBenchArgs,
-	summarizePage,
+	summarizePlan,
 } from './lib/bench-plan';
 import { launchChromium, VIEWPORT } from './lib/browser';
 import { serveBuild } from './lib/serve';
@@ -76,27 +75,7 @@ async function main(): Promise<void> {
 		await browser.close();
 		server?.stop();
 	}
-	const pages: PageSummary[] = [];
-	const failed: string[] = [];
-	for (const key of new Set(plan.map((item) => item.key))) {
-		const items = plan.filter((item) => item.key === key);
-		const measured = items
-			.filter((item) => !item.gpuTime)
-			.map((item) => results.get(item.id))
-			.filter((result): result is Exclude<DemoResult, { ok: false }> => result?.ok === true);
-		const gpuItem = items.find((item) => item.gpuTime);
-		const gpuResult = gpuItem ? results.get(gpuItem.id) : undefined;
-		for (const item of items) {
-			const result = results.get(item.id);
-			if (result && !result.ok) failed.push(`${item.id}: ${result.error}`);
-		}
-		const summary = summarizePage(
-			items[0] as BenchItem,
-			measured,
-			gpuResult?.ok && gpuResult.kind === 'bench' ? gpuResult : null,
-		);
-		if (summary) pages.push(summary);
-	}
+	const { pages, failed } = summarizePlan(plan, (id) => results.get(id));
 	const report = benchReport(pages, options, failed);
 	await writeFile(join(options.out, 'summary.md'), report);
 	await writeFile(

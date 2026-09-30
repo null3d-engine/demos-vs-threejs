@@ -21,9 +21,14 @@ async function waitFor(url: string, seconds: number): Promise<void> {
 	throw new Error(`${url} did not answer within ${seconds} s.`);
 }
 
+/** Builds the site into dist/. */
+export async function buildSite(): Promise<void> {
+	await run(['bun', 'run', 'build']);
+}
+
 /** Builds the site, serves it on `port`, and returns its address and a way to stop it. */
 export async function serveBuild(port: number): Promise<{ url: string; stop(): void }> {
-	await run(['bun', 'run', 'build']);
+	await buildSite();
 	const server: Subprocess = spawn(
 		['bunx', 'vite', 'preview', '--port', String(port), '--strictPort'],
 		{

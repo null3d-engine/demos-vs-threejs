@@ -139,6 +139,7 @@ function result(m: Measurement): BenchResult {
 		renderer: 'WebGPURenderer',
 		inWorker: true,
 		deviceClass: 'desktop',
+		renderSize: { width: 1280, height: 720, pixelRatio: 1 },
 		displayHz: 120,
 		count: 1000,
 		effects: 'fog,glow',

@@ -321,6 +321,7 @@ export async function startPage(): Promise<void> {
 			inWorker: started.inWorker,
 			deviceClass: cls,
 			displayHz,
+			renderSize: renderSize(),
 			count,
 			effects: effectsToText(effects),
 			crowd,

@@ -65,6 +65,8 @@ Add these to the page address, for example `/?scene=city&gpu=webgl2&count=500`.
 | `bun run typecheck` | TypeScript check |
 | `bun run bench` | The benchmark: each scene with three.js at fixed counts (or `--auto`), five fresh-tab runs of 5 s warm-up and 30 s measured, in Google Chrome on this machine's GPU; run files and a summary go to `runs/bench` (`--help` for options) |
 | `bun run parity` | The image check: each scene's hold frame drawn by three.js on WebGL2 and on WebGPU, compared with three.js's image rule; frames, diffs and a report go to `runs/parity` (`--help` for options) |
+| `bun run devices` | The same measurements, or a search for the largest count at which three.js holds the display rate (`--plan scale`), in browsers that Playwright cannot drive: apps on this Mac, browsers on an Android phone over USB, and tablets and phones on the local network; results go to `runs/devices` (`--help` for options) |
+| `bun run dev-cert` | Make the HTTPS certificate that tablets and phones on the local network need (uses mkcert) |
 | `bun run assets` | Make the battle's models in `assets/models/` from the source files listed in `assets/source.json` |
 
 ## Publish
@@ -80,6 +82,36 @@ It needs, in the repository settings:
 | `CLOUDFLARE_PAGES_PROJECT` | Variable (optional) | The Pages project name; default `null3d-vs-threejs` |
 
 Make the project once with `bunx wrangler pages project create null3d-vs-threejs --production-branch main`. Without the secrets, the workflow only says so and passes.
+
+## Phones and tablets
+
+`bun run devices` builds the site and serves it with a runner page. The runner page opens each
+demo page in a frame, waits for its result, and sends the result back. It needs no remote control
+of the browser, so it works in any browser.
+
+- **Android phone:** turn on USB debugging and connect the phone. The tool forwards its port over
+  adb, opens the runner page in each named browser, and reads the phone's heat every 10 s. Each
+  result records the heat it ran in.
+
+  ```sh
+  bun run devices -- --android chrome,brave
+  bun run devices -- --android chrome --plan scale
+  ```
+
+- **iPad or iPhone:** browsers give WebGPU and shared memory only to secure pages, so the tool
+  serves HTTPS on the local network. Run `bun run dev-cert` once, and install and trust the
+  printed `rootCA.pem` on the device. Then start the tool and open the printed address on the
+  device, with `?listen&runner=ipad-safari`. The page waits for each run.
+
+  ```sh
+  bun run devices -- --lan ipad-safari --scenes city
+  ```
+
+- **Apps on this Mac:** name them, for example `bun run devices -- Safari`.
+
+One browser per device runs at a time. The scale search doubles the count until three.js drops
+below the display rate, then narrows the gap, and suggests an auto-slide row that starts at half
+the count that held.
 
 ## License
 
