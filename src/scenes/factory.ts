@@ -505,9 +505,15 @@ export function factoryTriangles(
 	return factoryCells(movingParts) * perCell + triangleCount(meshes.floor);
 }
 
-/** Surface of each mesh. Floor lines are unlit: they show their color as it is, like a light. */
+/**
+ * Surface of each mesh. Floor lines are unlit: they shine like a light, their color times their
+ * intensity, which is above the glow threshold.
+ */
 export const FACTORY_MATERIALS: Readonly<
-	Record<FactoryMesh, { color: Hex; roughness: number; metalness: number; unlit?: boolean }>
+	Record<
+		FactoryMesh,
+		{ color: Hex; roughness: number; metalness: number; unlit?: boolean; intensity?: number }
+	>
 > = {
 	base: { color: '#3a3f47', roughness: 0.6, metalness: 0.4 },
 	turntable: { color: '#f2a93b', roughness: 0.45, metalness: 0.2 },
@@ -518,7 +524,7 @@ export const FACTORY_MATERIALS: Readonly<
 	crate: { color: '#b07a45', roughness: 0.85, metalness: 0 },
 	belt: { color: '#23262b', roughness: 0.9, metalness: 0.1 },
 	pallet: { color: '#6d5a3f', roughness: 0.9, metalness: 0 },
-	line: { color: '#ffcf6b', roughness: 1, metalness: 0, unlit: true },
+	line: { color: '#ffcf6b', roughness: 1, metalness: 0, unlit: true, intensity: 2.5 },
 	floor: { color: '#5b6068', roughness: 0.95, metalness: 0 },
 };
 
@@ -540,6 +546,7 @@ export const FACTORY_VIEW = {
 		{ position: [18, 5.5, -18], color: '#a8c8ff', intensity: 40, range: 25 },
 	],
 	fog: { color: '#0e1116' as Hex, near: 60, far: 260 },
+	glow: { threshold: 1.2, strength: 0.45, radius: 0.1 },
 } as const;
 
 /** The camera circles the middle of the hall once a minute, with a slow rise and fall. */
@@ -550,4 +557,4 @@ export const FACTORY_CAMERA: CameraLoop = {
 };
 
 /** The effects this scene uses. */
-export const FACTORY_EFFECTS = ['shadows', 'fog'] as const;
+export const FACTORY_EFFECTS = ['shadows', 'fog', 'glow'] as const;

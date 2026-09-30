@@ -13,6 +13,8 @@ export default defineConfig({
 	server: { headers: ISOLATION_HEADERS },
 	preview: { headers: ISOLATION_HEADERS },
 	worker: { format: 'es' },
-	// three.js's WebGPU build is about 700 kB before compression; it loads only when a demo starts.
-	build: { target: 'es2023', chunkSizeWarningLimit: 800 },
+	// three.js's WebGPU build is about 700 kB before compression, and its core with the WebGL
+	// renderer and the add-ons about 830 kB. They load only when a demo starts, in the worker, or
+	// on the page when the browser cannot draw in a worker.
+	build: { target: 'es2023', chunkSizeWarningLimit: 900 },
 });

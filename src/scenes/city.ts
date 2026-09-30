@@ -512,9 +512,10 @@ export const CAR_COLORS: readonly Hex[] = ['#ff6a5c', '#f0f0f0', '#8fb8ff', '#b9
 
 export const CITY_MATERIALS = {
 	building: { roughness: 0.85, metalness: 0.1 },
-	window: { unlit: true },
+	/** Lit windows and lamp heads shine: their color times their intensity. */
+	window: { unlit: true, intensity: 2.2 },
 	lampPole: { color: '#454b55' as Hex, roughness: 0.6, metalness: 0.6 },
-	lampHead: { color: '#fff2c4' as Hex, unlit: true },
+	lampHead: { color: '#fff2c4' as Hex, unlit: true, intensity: 3 },
 	// Little metal: with no surroundings to reflect, metal paint shows almost black.
 	car: { roughness: 0.45, metalness: 0.15 },
 	person: { color: '#8c8f99' as Hex, roughness: 0.9, metalness: 0 },
@@ -540,6 +541,7 @@ export const CITY_VIEW = {
 		{ position: [26, 6, -78], color: '#ffd28a', intensity: 120, range: 45 },
 	],
 	fog: { color: '#05070d' as Hex, near: 80, far: 1200 },
+	glow: { threshold: 1.2, strength: 0.35, radius: 0 },
 } as const;
 
 /**

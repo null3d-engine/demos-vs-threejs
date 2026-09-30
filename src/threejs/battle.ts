@@ -372,6 +372,7 @@ export const battleModule: SceneModule = {
 			pose,
 			objects: () => battleObjects(state),
 			triangles: () => battleTriangles(state, meshes, MODEL_TRIANGLES),
+			glow: BATTLE_VIEW.glow,
 		};
 	},
 };
