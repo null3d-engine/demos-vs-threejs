@@ -63,6 +63,20 @@ Add these to the page address, for example `/?scene=city&gpu=webgl2&count=500`.
 | `bun run parity` | The image check: each scene's hold frame drawn by three.js on WebGL2 and on WebGPU, compared with three.js's image rule; frames, diffs and a report go to `runs/parity` (`--help` for options) |
 | `bun run assets` | Make the battle's models in `assets/models/` from the source files listed in `assets/source.json` |
 
+## Publish
+
+The `Deploy` workflow builds the demos and publishes them on Cloudflare Pages: `main` to the production site, each pull request to a preview address. `public/_headers` sends the two cross-origin isolation headers there.
+
+It needs, in the repository settings:
+
+| Setting | Kind | Value |
+| --- | --- | --- |
+| `CLOUDFLARE_API_TOKEN` | Secret | A Cloudflare API token with the Cloudflare Pages: Edit permission |
+| `CLOUDFLARE_ACCOUNT_ID` | Secret | The Cloudflare account ID |
+| `CLOUDFLARE_PAGES_PROJECT` | Variable (optional) | The Pages project name; default `null3d-vs-threejs` |
+
+Make the project once with `bunx wrangler pages project create null3d-vs-threejs --production-branch main`. Without the secrets, the workflow only says so and passes.
+
 ## License
 
 Licensed under either of the [Apache License 2.0](LICENSE-APACHE) or the [MIT license](LICENSE-MIT), at your option.
