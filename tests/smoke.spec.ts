@@ -172,6 +172,21 @@ for (const [crowd, renderer] of [
 	});
 }
 
+test('the hold option draws one still frame with no readout', async ({ page }) => {
+	const errors = watchErrors(page);
+	await page.goto('/?scene=factory&gpu=webgl2&count=2000&at=6&hold=1');
+	await expect(page.locator('#view[data-held="true"]')).toBeVisible({ timeout: 60_000 });
+	await expect(readout(page)).toBeHidden();
+	const canvas = page.locator('#view canvas');
+	const first = await canvas.screenshot();
+	await page.waitForTimeout(1000);
+	const second = await canvas.screenshot();
+	const a = decode(first);
+	expect(drawnShare(first, [0x0e, 0x11, 0x16])).toBeGreaterThan(0.3);
+	expect(Buffer.from(decode(second).data).equals(Buffer.from(a.data))).toBe(true);
+	expect(errors).toEqual([]);
+});
+
 test('Auto starts three.js on one of the GPU paths', async ({ page }) => {
 	await page.goto('/?scene=factory');
 	await expect(readout(page)).toContainText(

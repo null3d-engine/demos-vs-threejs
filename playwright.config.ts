@@ -1,14 +1,6 @@
 import { defineConfig } from '@playwright/test';
+import { SOFTWARE_GPU_ARGS, VIEWPORT } from './tools/lib/browser';
 
-// A software GPU (SwiftShader) with WebGPU turned on, as the null3D engine's CI uses. It draws
-// slowly, so these tests check that the demos start, draw and measure, not how fast they are.
-const SOFTWARE_GPU = [
-	'--enable-unsafe-webgpu',
-	'--use-angle=swiftshader',
-	'--use-vulkan=swiftshader',
-	'--enable-unsafe-swiftshader',
-	'--enable-features=Vulkan',
-];
 const PORT = 4173;
 
 export default defineConfig({
@@ -18,9 +10,9 @@ export default defineConfig({
 	workers: 1,
 	use: {
 		baseURL: `http://localhost:${PORT}`,
-		viewport: { width: 1280, height: 800 },
+		viewport: VIEWPORT,
 		launchOptions: {
-			args: SOFTWARE_GPU,
+			args: SOFTWARE_GPU_ARGS,
 			// A local Chromium when the machine has one and cannot download Playwright's own.
 			executablePath: process.env.CHROMIUM_PATH || undefined,
 		},

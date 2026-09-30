@@ -33,6 +33,11 @@ export interface StartOptions {
 	crowd: CrowdWay;
 	/** Simulation seconds to run before the first frame, to start the scene at a set time. */
 	startSeconds: number;
+	/**
+	 * Draw one frame at `startSeconds` and keep it: the hold frame that the image check compares.
+	 * The scene does not move, and pausing or resuming changes nothing.
+	 */
+	hold: boolean;
 	/** Canvas size in CSS pixels, and the device pixels per CSS pixel to draw at. */
 	width: number;
 	height: number;

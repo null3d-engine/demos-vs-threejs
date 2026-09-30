@@ -60,3 +60,28 @@ jobs:
           name: playwright-results
           path: test-results/
           retention-days: 14
+
+  # The image check: three.js's WebGL2 and WebGPU hold frames of each scene, compared. Its report
+  # and frames are the baseline that null3D is checked against; differences do not fail the job.
+  image-check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v5
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: ${{ env.BUN_VERSION }}
+      - uses: actions/cache@v4
+        with:
+          path: ~/.bun/install/cache
+          key: bun-${{ runner.os }}-${{ hashFiles('bun.lock') }}
+          restore-keys: bun-${{ runner.os }}-
+      - run: bun install --frozen-lockfile
+      - run: bunx playwright install --with-deps chromium
+      - run: bun run parity -- --out parity-results
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: image-check
+          path: parity-results/
+          retention-days: 14

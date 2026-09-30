@@ -83,6 +83,9 @@ export async function startPage(): Promise<void> {
 	let gpu = pick<GpuChoice>(params.get('gpu'), ['auto', 'webgpu', 'webgl2'], 'auto');
 	const crowd = pick<CrowdWay>(params.get('crowd'), CROWD_WAYS, 'draw');
 	const at = startSeconds(params.get('at'));
+	// The image check's hold frame: one frame at `at`, kept still, with no readout over it.
+	const hold = params.has('hold');
+	view.classList.toggle('held', hold);
 	const effectsParam = params.get('effects');
 	let effects: Effects =
 		effectsParam === null ? effectsOf(SCENES[scene].effects) : effectsFromText(effectsParam);
@@ -207,6 +210,7 @@ export async function startPage(): Promise<void> {
 	};
 
 	const startEngine = async () => {
+		delete view.dataset.held;
 		stopRamp();
 		adapter?.stop();
 		memory.stop();
@@ -239,6 +243,7 @@ export async function startPage(): Promise<void> {
 				gpu,
 				crowd,
 				startSeconds: at,
+				hold,
 				width: size.width,
 				height: size.height,
 				pixelRatio: size.pixelRatio,
@@ -248,6 +253,16 @@ export async function startPage(): Promise<void> {
 			return;
 		}
 		if (adapter !== next) return;
+		if (hold) {
+			// The worker's frame reaches the screen with the page's next frames.
+			requestAnimationFrame(() =>
+				requestAnimationFrame(() => {
+					view.dataset.held = 'true';
+				}),
+			);
+			status.textContent = 'Hold frame: the scene stands still for the image check.';
+			return;
+		}
 		memory.start(() => writeReadout());
 		status.textContent = [
 			problem,

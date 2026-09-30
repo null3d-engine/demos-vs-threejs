@@ -89,7 +89,8 @@ export const SCENES: Readonly<Record<SceneId, SceneInfo>> = {
 			phone: { start: 100, factor: 1.15, max: 3_000, measured: false },
 		},
 		maxCount: MAX_PER_ARMY,
-		hold: { seconds: 20, count: 1_000 },
+		// In the fight: units aim, fire, fall and get up, and shells burst.
+		hold: { seconds: 60, count: 1_000 },
 		// Soldiers and mechs of both armies, tank parts and the ground.
 		objectsAt: (count) => {
 			const soldiers = battleSoldiers(count);
