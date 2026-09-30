@@ -138,7 +138,7 @@ export const battleModule: SceneModule = {
 					fog,
 					shadows,
 				});
-				scene.add(crowd.mesh as unknown as ThreeModule.Object3D);
+				scene.add(crowd.object as unknown as ThreeModule.Object3D);
 				crowds[name] = crowd;
 			}
 		}
