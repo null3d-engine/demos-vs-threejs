@@ -24,7 +24,8 @@ function drawnShare(png: Buffer, background: [number, number, number]): number {
 
 /**
  * Waits until much of the view shows the scene, not the background. The last screenshot is kept
- * with the test's results, so a reviewer can look at each scene on each GPU path.
+ * with the test's results, so a reviewer can look at each scene on each GPU path. A screenshot
+ * waits for the next frame, and with the glow the software GPU can take most of a minute per frame.
  */
 async function expectDrawn(
 	page: Page,
@@ -38,7 +39,7 @@ async function expectDrawn(
 				last = await page.locator('#view').screenshot();
 				return drawnShare(last, background);
 			},
-			{ timeout: 60_000 },
+			{ timeout: 180_000 },
 		)
 		.toBeGreaterThan(0.3);
 	if (last) writeFileSync(testInfo.outputPath('view.png'), last);
@@ -125,6 +126,29 @@ for (const { scene, background, count, exactObjects } of SCENE_CHECKS) {
 		);
 		await expectCounted(page, scene, count, exactObjects);
 		await expectDrawn(page, background, testInfo);
+		expect(errors).toEqual([]);
+	});
+}
+
+// Every scene has the glow on by default; these draw a scene the plain way, straight to the canvas.
+for (const gpu of ['webgl2', 'webgpu'] as const) {
+	test(`without the glow, the factory draws straight to the canvas on ${gpu}`, async ({
+		page,
+	}, testInfo) => {
+		const errors = watchErrors(page);
+		await page.goto(`/?scene=factory&gpu=${gpu}&effects=shadows,fog`);
+		const started = readout(page).filter({ hasText: 'Draw calls' });
+		const failed = page.locator('#status', { hasText: 'could not start' });
+		await expect(started.or(failed)).toBeVisible({ timeout: 60_000 });
+		const status = (await page.locator('#status').textContent()) ?? '';
+		test.skip(
+			status.includes("'swizzle'"),
+			'This Chromium refuses the texture swizzle setting of three.js 0.186.',
+		);
+		await expect(readout(page)).toContainText(
+			gpu === 'webgpu' ? 'WebGPU · worker' : 'WebGL2 · worker',
+		);
+		await expectDrawn(page, [0x0e, 0x11, 0x16], testInfo);
 		expect(errors).toEqual([]);
 	});
 }

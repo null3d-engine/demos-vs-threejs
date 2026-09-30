@@ -18,6 +18,7 @@ import {
 	type SceneModule,
 	type Three,
 } from './common';
+import { type Drawer, makeDrawer } from './draw';
 import { buildFactory } from './factory';
 
 /** The three.js version the demos pin. */
@@ -39,12 +40,13 @@ const STATS_MS = 500;
 type AnyRenderer = THREE.WebGLRenderer & {
 	init?: () => Promise<unknown>;
 	backend?: { isWebGPUBackend?: boolean };
-	info: { render: { calls?: number; drawCalls?: number } };
+	info: { autoReset: boolean; reset(): void; render: { calls?: number; drawCalls?: number } };
 };
 
 export class ThreeRuntime {
 	private renderer: AnyRenderer | null = null;
 	private build: SceneBuild | null = null;
+	private drawer: Drawer | null = null;
 	private readonly clock = new FixedClock();
 	private readonly samples = new FrameSamples();
 	private lastTime = -1;
@@ -93,6 +95,16 @@ export class ThreeRuntime {
 		await (
 			renderer as unknown as { compileAsync: (s: unknown, c: unknown) => Promise<void> }
 		).compileAsync(build.scene, build.camera);
+		// Post-processing draws count too, so the counts reset once a frame, not once a draw.
+		renderer.info.autoReset = false;
+		const drawer = await makeDrawer(renderer, kind, build, options.effects.glow, {
+			width: options.width,
+			height: options.height,
+			pixelRatio: options.pixelRatio,
+		});
+		this.drawer = drawer;
+		// One draw before the first frame builds the glow's GPU programs too.
+		drawer.render();
 		this.post({
 			type: 'started',
 			started: {
@@ -179,7 +191,8 @@ export class ThreeRuntime {
 		const steps = this.clock.advance(interval / 1000);
 		for (let i = 0; i < steps; i++) build.step();
 		build.pose(this.clock.time);
-		renderer.render(build.scene, build.camera);
+		renderer.info.reset();
+		this.drawer?.render();
 		const info = renderer.info.render;
 		this.drawCalls = info.drawCalls ?? info.calls ?? 0;
 		if (interval > 0) this.samples.record(time, interval, performance.now() - start);
@@ -227,6 +240,7 @@ export class ThreeRuntime {
 		if (!this.renderer || !this.build) return;
 		this.renderer.setPixelRatio(pixelRatio);
 		this.renderer.setSize(width, height, false);
+		this.drawer?.setSize(width, height, pixelRatio);
 		this.build.camera.aspect = width / height;
 		this.build.camera.updateProjectionMatrix();
 	}
@@ -237,5 +251,6 @@ export class ThreeRuntime {
 		this.renderer?.dispose();
 		this.renderer = null;
 		this.build = null;
+		this.drawer = null;
 	}
 }

@@ -4,7 +4,7 @@
 
 import type * as ThreeModule from 'three';
 import type { CrowdWay } from '../engine/protocol';
-import type { Effects } from '../scenes/effects';
+import type { Effects, GlowSpec } from '../scenes/effects';
 import type { MeshData } from '../scenes/geometry';
 
 export { writeMatrix, writeQuaternionMatrix } from './matrices';
@@ -44,6 +44,8 @@ export interface SceneBuild {
 	pose(seconds: number): void;
 	objects(): number;
 	triangles(): number;
+	/** The scene's glow, drawn when the glow effect is on. */
+	glow: GlowSpec;
 }
 
 /** Builds a scene; a scene that loads files builds it asynchronously. */
@@ -70,6 +72,8 @@ export interface MaterialSpec {
 	roughness?: number;
 	metalness?: number;
 	unlit?: boolean;
+	/** An unlit material's brightness: its color times this. Above 1 it glows. */
+	intensity?: number;
 }
 
 /**
@@ -79,7 +83,8 @@ export interface MaterialSpec {
  */
 export function makeMaterial(three: Three, spec: MaterialSpec, fog: boolean): ThreeModule.Material {
 	const color = new three.Color(spec.color ?? '#ffffff');
-	if (spec.unlit) return new three.MeshBasicMaterial({ color, fog });
+	if (spec.unlit)
+		return new three.MeshBasicMaterial({ color: color.multiplyScalar(spec.intensity ?? 1), fog });
 	return new three.MeshStandardMaterial({
 		color,
 		roughness: spec.roughness ?? 0.8,
@@ -129,6 +134,7 @@ export interface ViewSpec {
 		range: number;
 	}[];
 	fog: { color: string; near: number; far: number };
+	glow: GlowSpec;
 }
 
 /**

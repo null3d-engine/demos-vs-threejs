@@ -63,7 +63,7 @@ export const buildCity: Builder = (three, options) => {
 	const white = { ...CITY_MATERIALS.building, color: '#ffffff' };
 	const materials = {
 		building: makeMaterial(three, white, fog),
-		window: makeMaterial(three, { color: '#ffffff', unlit: true }, fog),
+		window: makeMaterial(three, { ...CITY_MATERIALS.window, color: '#ffffff' }, fog),
 		lampPole: makeMaterial(three, CITY_MATERIALS.lampPole, fog),
 		lampHead: makeMaterial(three, CITY_MATERIALS.lampHead, fog),
 		car: makeMaterial(three, { ...CITY_MATERIALS.car, color: '#ffffff' }, fog),
@@ -337,5 +337,6 @@ export const buildCity: Builder = (three, options) => {
 		pose,
 		objects: () => cityObjects(blocks),
 		triangles: () => cityTriangles(blocks, meshes),
+		glow: CITY_VIEW.glow,
 	};
 };
